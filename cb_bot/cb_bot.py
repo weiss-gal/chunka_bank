@@ -1,71 +1,13 @@
 from collections import namedtuple
 import logging
 import discord
-from discord.ext import commands
 import sys
-from cb_bot.common import normalize_message
+
+from .balance_command_handler import BalanceCommandHandler
+from .dialog import Dialog
 
 Config = namedtuple('Config', ['bot_token', 'cb_server_url'])
 
-# Abstract class for a command
-class CommandHandler():
-    def matches(message: str) -> bool:
-        raise NotImplementedError
-    
-    def get_phrase() -> str:
-        raise NotImplementedError
-
-    def __init__(self, user_id, channel_id):
-        self.user_id = user_id
-        self.channel_id = channel_id
-
-    # returns true if the command handling is completed
-    async def handle_message(self, message: discord.Message) -> bool:
-        raise NotImplementedError
-
-class BalanceCommandHandler(CommandHandler):
-    PHRASE = 'balance'
-
-    def matches(message: str) -> bool:
-        return message.split(' ')[0] == BalanceCommandHandler.PHRASE
-    
-    def get_phrase() -> str:
-        return BalanceCommandHandler.PHRASE
-
-    async def handle_message(self, message: discord.Message) -> bool:
-        await message.channel.send('Your balance is 1000')
-        return True
-
-# Abstract class for a session
-class Dialog:
-    HELLO_PHRASES = ['hello', 'hi', 'hey', 'sup']
-
-    def __init__(self, user_id, channel_id, command_types: list[CommandHandler]):
-        self.user_id = user_id
-        self.channel_id = channel_id
-        self.command_types = command_types
-        self.active_command = None
-    
-    async def handle_message(self, message):
-        if self.active_command:
-            res = await self.active_command.handle_message(message)
-            if res: self.active_command = None
-
-            return
-
-        for command in self.command_types:
-            if command.matches(normalize_message(message.content)):
-                self.active_command = command(self.user_id, self.channel_id)
-                await self.active_command.handle_message(message)
-                
-                return
-
-        help_message = 'I can help you with the following commands: \n' + '\n'.join([f"  {command.get_phrase()}" for command in self.command_types])
-        if normalize_message(message.content) in Dialog.HELLO_PHRASES:
-            return await message.channel.send('Hello! I am the Chunka Bank bot. ' + help_message)
-        
-        return await message.channel.send('I do not understand you. ' + help_message)
-        
 def get_env_config():
     import os
 
