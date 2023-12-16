@@ -16,14 +16,14 @@ class Repo:
         # Create the 'balance' table
         cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {BALANCE_TABLE} (
-                user_id TEXT PRIMARY KEY,
+                userid TEXT PRIMARY KEY,
                 balance REAL
             )
         ''')
         # Create the 'user' table
         cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {USER_TABLE} (
-                user_id TEXT PRIMARY KEY
+                userid TEXT PRIMARY KEY
             )
         ''')
         conn.commit()
