@@ -11,5 +11,6 @@ class BalanceCommandHandler(CommandHandler):
         return BalanceCommandHandler.PHRASE
 
     async def handle_message(self, message: discord.Message) -> bool:
-        await message.channel.send('Your balance is 1000')
+        balance = await self.server_connection.get_user_balance(self.user_id)
+        await message.channel.send(f'Your balance is {balance}')
         return True

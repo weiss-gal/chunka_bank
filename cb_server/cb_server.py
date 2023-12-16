@@ -1,14 +1,30 @@
+import argparse
+import os
 import flask
-import sys
 from cb_repo import Repo, UserNotFound
 
-if len(sys.argv) != 2:
-    print('Usage: cb_server.py <db_path>')
-    sys.exit(1)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Starts the Chunka bank database server")
+    parser.add_argument('db_path', help='Database file path ')
+    parser.add_argument('-c', '--create', action='store_true', help='Create a new database')
+    return parser.parse_args()
 
-db_path = sys.argv[1]
+args = parse_args()
+print ("args:", args)
 
-repo = Repo(db_path)
+create = False
+if args.create:
+    if os.path.isfile(args.db_path):
+        print(f"Database file already exists at '{args.db_path}'")
+        exit(-1)
+    
+    create = True
+else:
+    if not os.path.isfile(args.db_path):
+        print(f"No database file found at {args.db_path}, to create new one re-run the server with the '--create' flag")
+        exit(-1)
+
+repo = Repo(args.db_path, create)
 
 app = flask.Flask(__name__)
 

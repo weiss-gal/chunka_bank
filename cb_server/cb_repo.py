@@ -10,9 +10,30 @@ class UserNotFound(RepoException):
     pass
 
 class Repo:
-    def __init__(self, db_path):
-        self.db_path = db_path
+    def create_database(self):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        # Create the 'balance' table
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {BALANCE_TABLE} (
+                user_id TEXT PRIMARY KEY,
+                balance REAL
+            )
+        ''')
+        # Create the 'user' table
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {USER_TABLE} (
+                user_id TEXT PRIMARY KEY
+            )
+        ''')
+        conn.commit()
+        conn.close()
 
+    def __init__(self, db_path: str, create: bool=False):
+        self.db_path = db_path
+        if create:
+            self.create_database()
+        
     def get_user_balance(self, userid):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

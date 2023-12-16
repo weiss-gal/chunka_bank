@@ -2,18 +2,21 @@ from collections import namedtuple
 import logging
 import discord
 import sys
+from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.cb_user_mapper import UserMapper
 
 from .balance_command_handler import BalanceCommandHandler
 from .dialog import Dialog
 
-Config = namedtuple('Config', ['bot_token', 'cb_server_url'])
+Config = namedtuple('Config', ['bot_token', 'cb_server_url', 'mapper_path'])
 
 def get_env_config():
     import os
 
     return Config(
         bot_token=os.environ.get('BOT_TOKEN'),
-        cb_server_url=os.environ.get('CB_SERVER_URL')
+        cb_server_url=os.environ.get('CB_SERVER_URL'),
+        mapper_path=os.environ.get('MAPPER_PATH')
     )
 
 def parse_args(args):
@@ -21,7 +24,7 @@ def parse_args(args):
         print(f'Usage: {args[0]} [bot_token>]')
         sys.exit(1)
 
-    return Config(bot_token=None if len(args) == 1 else args[1], cb_server_url=None)
+    return Config(bot_token=None if len(args) == 1 else args[1], cb_server_url=None, mapper_path=None)
 
 def get_dialog_key(user_id, channel_id):
     return f'{user_id}-{channel_id}'
@@ -54,12 +57,19 @@ def main(args):
     intents = discord.Intents.default()
     intents.message_content = True
 
+    user_mapper = UserMapper(config.mapper_path)
+    cb_server_connection = CBServerConnection(config.cb_server_url, user_mapper)
+
     client = discord.Client(intents=intents)
     dialogs = {}
 
     @client.event
     async def on_ready():
         print(f"Bot {client.user} is ready")
+        # print message on general channel
+        general_channel = [channel for channel in client.get_all_channels() if channel.name == 'general'][0]
+        await general_channel.send(f"Bot _{client.user}_ is ready\n" + 
+                                   "To ") # XXX complete this message
 
     @client.event
     async def on_message(message):
@@ -80,7 +90,7 @@ def main(args):
             await dialog.handle_message(message)
             return
         
-        dialog = Dialog(user.id, channel.id, command_types)
+        dialog = Dialog(user.id, channel.id, command_types, cb_server_connection)
         add_dialog(user.id, channel.id, dialog, dialogs)
         await dialog.handle_message(message)
 
