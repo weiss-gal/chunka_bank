@@ -11,5 +11,11 @@ class UserMapper:
         for row in reader:
             self.user_map[row[0]] = row[1]
 
+        print("User map: ", self.user_map) # XXX debug
+
     def get_cb_user_id(self, discord_user_id: str) -> str:
-        return self.user_map.get(discord_user_id)
+        print(f"getting cb user id for discord user id: [{type(discord_user_id)}] {discord_user_id}") # XXX debug
+        print("user map: ", self.user_map) # XXX debug
+        result = self.user_map.get(discord_user_id)
+        print("result: ", result)
+        return result

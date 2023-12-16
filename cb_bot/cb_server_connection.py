@@ -11,7 +11,7 @@ class CBServerConnection:
     async def get_user_balance(self, user_id: str):
         cb_user_id = self.mapper.get_cb_user_id(user_id)
         if cb_user_id is None:
-            raise Exception(f'Discord {user_id} not found in mapper')
+            raise Exception(f'Chunka Bank {user_id} not found in mapper')
         
         async with aiohttp.ClientSession() as session:
             async with session.get(f'{self.server_url}/user/{cb_user_id}/balance') as resp:
