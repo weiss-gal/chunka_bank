@@ -15,6 +15,7 @@ class CBServerConnection:
         
         async with aiohttp.ClientSession() as session:
             async with session.get(f'{self.server_url}/user/{cb_user_id}/balance') as resp:
+                print(f'Got response: {resp.status}')
                 if resp.status == 200:
                     resp_json = await resp.json()
                     return float(resp_json['balance'])

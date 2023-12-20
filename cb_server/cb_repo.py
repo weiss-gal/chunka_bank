@@ -44,8 +44,11 @@ class Repo:
         
         return res[0]
     
-    def add_user(self, userid):
+    def add_user(self, userid, balance):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
-        cursor.execute(f'INSERT INTO {BALANCE_TABLE} (userid, balance) VALUES (?, ?)', (userid, 0))
+        cursor.execute(f'INSERT INTO {USER_TABLE} (userid) VALUES (?)', (userid,))
+        cursor.execute(f'INSERT INTO {BALANCE_TABLE} (userid, balance) VALUES (?, ?)', (userid, balance))
+        conn.commit()
+        conn.close()
     

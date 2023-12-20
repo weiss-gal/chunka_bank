@@ -1,7 +1,11 @@
 from collections import namedtuple
 import logging
+import signal
 import discord
+from discord.ext import tasks
+from discord.ext import commands
 import sys
+
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
 
@@ -66,12 +70,26 @@ def main(args):
     user_mapper = UserMapper(config.mapper_path)
     cb_server_connection = CBServerConnection(config.cb_server_url, user_mapper)
 
-    client = discord.Client(intents=intents)
+    client = commands.Bot(command_prefix='', intents=intents)
     dialogs = {}
+    fast_tasks = [] # every second
+
+    # this is the channel used to send notifications to all users
+    general_channel = None
+
+    # tasks to be executed every second
+    @tasks.loop(seconds=1)  
+    async def execute_fast_tasks():
+        if len(fast_tasks) > 0:
+            print("Executing fast tasks2") # XXX remove this
+        for task in fast_tasks:
+            await task()
 
     @client.event
     async def on_ready():
+        nonlocal general_channel
         print(f"Bot {client.user} is ready")
+        execute_fast_tasks.start()
         # print message on general channel
         general_channel = [channel for channel in client.get_all_channels() if channel.name == 'general'][0]
         await general_channel.send(f"Bot _{client.user}_ is ready\n" + 
@@ -79,27 +97,27 @@ def main(args):
 
     @client.event
     async def on_message(message):
-        try:
-            # this is the string text message of the Message
-            content = message.content
-            # this is the sender of the Message
-            user = message.author
-            # this is the channel of there the message is sent
-            channel = message.channel
-            logging.info(f"Message recieved: {content}, User: {user}, Channel: {channel}")
-            # if the user is the client user itself, ignore the message
-            if user == client.user:
-                return
+        # this is the string text message of the Message
+        content = message.content
+        # this is the sender of the Message
+        user = message.author
+        # this is the channel of there the message is sent
+        channel = message.channel
+        logging.info(f"Message recieved: {content}, User: {user}, Channel: {channel}")
+        # if the user is the client user itself, ignore the message
+        if user == client.user:
+            return
+        
+        user_id = str(user.id)
+        channel_id = str(channel.id)
 
+        try:        
             # if there is an existing dialog for the user, use it
             dialog = get_dialog(str(user.id), channel.id, dialogs)
             if dialog:
                 await dialog.handle_message(message)
                 return
-            
-            user_id = str(user.id)
-            channel_id = str(channel.id)
-
+                    
             dialog = Dialog(user_id, channel_id, command_types, cb_server_connection)
             add_dialog(user_id, channel_id, dialog, dialogs)
             await dialog.handle_message(message)
@@ -112,6 +130,23 @@ def main(args):
 
             dialogs.pop(get_dialog_key(user_id, channel_id))
 
+    is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
+    def terminanation_handler(sig, frame):
+        nonlocal is_stopped
+        if is_stopped:
+            exit(0)
+        
+        is_stopped = True
+        print(f"Bot {client.user} is going to sleep")
+        async def stop():
+            if general_channel is not None:
+                await general_channel.send(f"Bot _{client.user}_ is going to sleep\n" + 
+                                            "Bye bye. ")
+            await client.close()
+        
+        fast_tasks.append(stop)
+        
+    signal.signal(signal.SIGINT, terminanation_handler)
 
     client.run(bot_token)
 

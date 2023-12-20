@@ -36,6 +36,14 @@ def get_user_balance(username):
     except UserNotFound:
         return flask.jsonify({'error': f'User {username} not found'}), 404
     
+
+@app.route('/user/<username>', methods=['POST'])
+def add_user(username):
+    repo.add_user(username, 0)
+    # upon success return 204
+    return '', 204
+    
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
 
