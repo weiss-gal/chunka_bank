@@ -8,7 +8,7 @@ import sys
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
-
+from .transfer_command_handler import TransferCommandHandler
 from .balance_command_handler import BalanceCommandHandler
 from .dialog import Dialog
 
@@ -62,7 +62,10 @@ def main(args):
     
     logging.basicConfig(filename='cb_bot.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    command_types = [BalanceCommandHandler]
+    command_types = [
+        BalanceCommandHandler,
+        TransferCommandHandler
+    ]
 
     intents = discord.Intents.default()
     intents.message_content = True
