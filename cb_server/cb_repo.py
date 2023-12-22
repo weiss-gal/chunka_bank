@@ -84,7 +84,7 @@ class Repo:
         if from_balance + overdraft_limit < value:
             return False, 'Insufficient funds'
         
-        timestamp = datetime.datetime.now().timestamp()
+        timestamp = int(datetime.datetime.now().timestamp())
         cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (to_userid,))
         to_balance = float(cursor.fetchone()[0])
         cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (from_balance - value, from_userid))
