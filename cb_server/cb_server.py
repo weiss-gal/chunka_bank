@@ -1,7 +1,21 @@
 import argparse
+from datetime import datetime
 import os
+from typing import List
 import flask
-from cb_repo import Repo, UserNotFound
+from cb_server.cb_repo import Repo, UserNotFound
+from models.transactions import UserTransactionInfo
+
+def get_timestamp_from_req(req , key: str) -> int:
+    print("the type of req is ", type(req)) # XXX - debug
+    iso_time = req.args.get(key)
+    if iso_time is None:
+        return None
+    
+    try:
+        return int(datetime.fromisoformat(iso_time).timestamp())
+    except ValueError:
+        flask.abort(400, f'Invalid {key} value: {iso_time}')
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Starts the Chunka bank database server")
@@ -48,13 +62,44 @@ def transfer_money(username):
     req_body = flask.request.json
     
     to = req_body['to']
+    if to == username:
+        flask.abort(400, f'Cannot transfer money to the same user')
     value = float(req_body['value'])
+    if value <= 0:
+        flask.abort(400, f'Invalid value: {value}')
+
     # get the 'description' field
     description = req_body['description']
     # transfer the money
     repo.transfer_money(username, to, value, description)
     # upon success return 204
     return '', 204
+
+@app.route('/user/<username>/transactions', methods=['GET'])
+def get_user_transactions(username):
+    # get the request query parameters
+    from_timestamp = get_timestamp_from_req(flask.request, 'from_time')
+    to_timestamp = get_timestamp_from_req(flask.request, 'to_time')
+    try:
+        last_n = int(flask.request.args.get('last_n')) if flask.request.args.get('last_n') is not None else None
+    except ValueError:
+        flask.abort(400, f'Invalid last_n value: {last_n}')
+    
+    # get the transactions
+    transactions = repo.get_user_transactions(username, last_n, from_timestamp, to_timestamp)
+
+    transactions_list: List[UserTransactionInfo] = []
+    for t in transactions:
+        transactions_list.append(UserTransactionInfo(
+            userid=username,
+            transaction_id=None,
+            amount=t[1],
+            time=datetime.fromtimestamp(t[0]).isoformat() + 'Z',
+            description=t[2]
+        ))
+        
+    # return the transactions
+    return flask.jsonify(transactions_list)
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)

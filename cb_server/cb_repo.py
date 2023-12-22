@@ -97,3 +97,22 @@ class Repo:
         conn.close()
 
         return True, None
+    
+    def get_user_transactions(self, userid: str, last_n: int, from_timestamp: int=None, to_timestamp: int=None):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        where_parts = filter(lambda x: x is not None, [
+            f'{USERID_KEY}=?', 
+            f'{TIMESTAMP_KEY}>={from_timestamp}' if from_timestamp is not None else None,
+            f'{TIMESTAMP_KEY}<={to_timestamp}' if to_timestamp is not None else None
+        ])
+
+        limit_part = f'LIMIT {last_n}' if last_n is not None else ''
+
+        cursor.execute(f'SELECT {TIMESTAMP_KEY}, {VALUE_KEY}, {DESCRIPTION_KEY} FROM {TRANACTIONS_TABLE} ' +
+                       f'WHERE {" AND ".join(where_parts)} ORDER BY {TIMESTAMP_KEY} DESC ' + 
+                       limit_part , (userid,))
+        res = cursor.fetchall()
+
+        conn.close()
+        return res
