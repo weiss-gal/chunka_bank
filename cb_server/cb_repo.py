@@ -42,7 +42,7 @@ class Repo:
                 {USERID_KEY} TEXT NOT NULL,
                 {VALUE_KEY} REAL NOT NULL,
                 {TIMESTAMP_KEY} INTEGER NOT NULL,
-                {DESCRIPTION_KEY} TEXT NOT NULL,
+                {DESCRIPTION_KEY} TEXT NOT NULL
             )
         ''')
         conn.commit()
