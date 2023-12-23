@@ -88,11 +88,17 @@ def main(args):
         for task in fast_tasks:
             await task()
 
+    # tasks to be executed every 10 seconds
+    @tasks.loop(seconds=10)
+    async def execute_slow_tasks():
+        pass
+
     @client.event
     async def on_ready():
         nonlocal general_channel
         print(f"Bot {client.user} is ready")
         execute_fast_tasks.start()
+        execute_slow_tasks.start()
         # print message on general channel
         general_channel = [channel for channel in client.get_all_channels() if channel.name == 'general'][0]
         await general_channel.send(f"Bot _{client.user}_ is ready\n" + 
