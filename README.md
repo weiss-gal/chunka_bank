@@ -33,6 +33,7 @@ pre MVP
 - add timeout to dialogs
 - support only DMs
 - replace web server for cb_server to waitress
+
 post MVP
 - auth authentication to cb_server module
 - add transaction id
