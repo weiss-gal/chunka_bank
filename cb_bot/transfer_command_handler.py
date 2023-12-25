@@ -1,11 +1,12 @@
 import discord
 from .command_handler import CommandHandler
+from .command_utils import CommandUtils
 
 class TransferCommandHandler(CommandHandler):
     PHRASE = 'transfer'
 
     def matches(message: str) -> bool:
-        return message.split(' ')[0] == TransferCommandHandler.PHRASE
+        return CommandUtils.split_message(message)[0] == TransferCommandHandler.PHRASE
     
     def get_phrase() -> str:
         return TransferCommandHandler.PHRASE

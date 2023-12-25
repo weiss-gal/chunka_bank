@@ -68,6 +68,7 @@ def main(args):
     ]
 
     intents = discord.Intents.default()
+    intents.members = True
     intents.message_content = True
 
     user_mapper = UserMapper(config.mapper_path)
@@ -83,15 +84,17 @@ def main(args):
     # tasks to be executed every second
     @tasks.loop(seconds=1)  
     async def execute_fast_tasks():
-        if len(fast_tasks) > 0:
-            print("Executing fast tasks2") # XXX remove this
         for task in fast_tasks:
             await task()
 
     # tasks to be executed every 10 seconds
+
     @tasks.loop(seconds=10)
     async def execute_slow_tasks():
-        pass
+        if len(client.guilds) > 1:
+            raise Exception('More than one guild is not supported')
+        
+        cb_server_connection.update_users(client.guilds[0].members)
 
     @client.event
     async def on_ready():
