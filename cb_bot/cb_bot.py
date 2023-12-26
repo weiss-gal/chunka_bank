@@ -93,8 +93,6 @@ def main(args):
     async def execute_slow_tasks():
         if len(client.guilds) > 1:
             raise Exception('More than one guild is not supported')
-        
-        cb_server_connection.update_users(client.guilds[0].members)
 
     @client.event
     async def on_ready():
