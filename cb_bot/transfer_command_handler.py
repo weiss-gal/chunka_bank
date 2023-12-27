@@ -3,7 +3,7 @@ from typing import List, Tuple
 import discord
 import re
 
-from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.cb_server_connection import CBServerConnection, CBServerException
 from .command_handler import CommandHandler
 from .command_utils import CommandUtils
 class CommandStatus(Enum):
@@ -36,7 +36,7 @@ class TransferCommandHandler(CommandHandler):
     def resolve_user_id(self, user_str: str) -> str:
         return self.user_info_provider.search_user(user_str)
 
-    def parse_full_command(self, command_parts: List[str]) -> str:
+    def handle_full_command(self, command_parts: List[str]) -> str:
         """
         Parse the full command, return True if the command is valid, False otherwise
         If the command is invalid, the error message is returned as well
@@ -83,18 +83,37 @@ class TransferCommandHandler(CommandHandler):
         else:
             self.description = f"Transfer {self.amount} from '{self.user_info_provider.get_user_info(self.user_id).display_name}' " + \
                 f"to '{self.user_info_provider.get_user_info(self.to).display_name}'"
-        self.status = CommandStatus.COMPLETED
+        self.status = CommandStatus.PENDING_CONFIRMATION
         return f"You are about to transfer {self.amount} to '{self.user_info_provider.get_user_info(self.to).display_name}' " + \
             f"with description\n`{self.description}`\n" + \
-            f"Please confirm by typing 'yes' or 'y'"
+            f"Please confirm by typing *yes* or *y*"
 
+    async def handle_confirmation(self, command_parts: List[str]) -> str:
+        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
+            return f"Invalid confirmation format, please type *yes* or *y*"
+        
+        self.status = CommandStatus.COMPLETED
+        # transfer the money
+        try:
+            await self.server_connection.do_money_transfer(self.user_id, self.to, self.amount, self.description)
+        except CBServerException as e:
+            return f"Failed to transfer money: [{e.server_error.error_code}]{e.server_error.error_msg}"
+        
+        return None # no need for report, notifications are sent automatically.
+    
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
-        if len(command_parts) == 1:
-            await message.channel.send(f'Please use the following format:\n' +
-                                        f'  `{TransferCommandHandler.FORMAT}`')
-            return True
-            
-        response = self.parse_full_command(command_parts)    
-        await message.channel.send(response)
+        
+        response = None
+        if self.status == CommandStatus.START:
+            if len(command_parts) == 1:
+                await message.channel.send(f'Please use the following format:\n  `{TransferCommandHandler.FORMAT}`')
+                return True
+            response = self.handle_full_command(command_parts)
+        elif self.status == CommandStatus.PENDING_CONFIRMATION:
+            response = await self.handle_confirmation(command_parts)
+        else:
+            raise Exception(f'Invalid status: {self.status}. This should not happen')
+
+        if response: await message.channel.send(response)
         return self.status == CommandStatus.COMPLETED

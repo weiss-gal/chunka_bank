@@ -1,9 +1,11 @@
 import argparse
 from datetime import datetime
+from json import JSONEncoder
 import os
 from typing import List
 import flask
 from cb_server.cb_repo import Repo, UserNotFound
+from models.server_errors import ErrorCodes, ServerError
 from models.transactions import UserTransactionInfo
 
 def get_timestamp_from_req(req , key: str) -> int:
@@ -22,6 +24,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('db_path', help='Database file path ')
     parser.add_argument('-c', '--create', action='store_true', help='Create a new database')
     return parser.parse_args()
+
+def build_error_response(error: ServerError) -> flask.Response:
+    # a workaround to convert the enum to string
+    error_dict = {**error._asdict(), "error_code":error.error_code.name}
+    response = flask.jsonify(error_dict)
+    response.status_code = 400
+    return response
 
 args = parse_args()
 print ("args:", args)
@@ -63,15 +72,22 @@ def transfer_money(username):
     
     to = req_body['to']
     if to == username:
-        flask.abort(400, f'Cannot transfer money to the same user')
-    value = float(req_body['value'])
-    if value <= 0:
-        flask.abort(400, f'Invalid value: {value}')
-
+        return build_error_response(ServerError(ErrorCodes.USER_ERROR, 'You cannot transfer money to yourself'))
+    try:
+        value = float(req_body['value'])
+    except ValueError:
+        value = None
+    if value is None or value <= 0:
+        return build_error_response(ServerError(ErrorCodes.USER_ERROR, f'Invalid amount: \'{req_body["value"]}\''))
+    
     # get the 'description' field
     description = req_body['description']
     # transfer the money
-    repo.transfer_money(username, to, value, description)
+    sucess, msg = repo.transfer_money(username, to, value, description)
+    if not sucess:
+        error = ServerError(ErrorCodes.USER_ERROR, msg)
+        return build_error_response(error)
+        
     # upon success return 204
     return '', 204
 

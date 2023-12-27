@@ -18,13 +18,11 @@ class Dialog:
     
     async def handle_message(self, message: discord.Message):
         if self.active_command:
-            print(f'active command is {self.active_command.get_phrase()}') # XXX remove
             res = await self.active_command.handle_message(message)
             if res: self.active_command = None
 
             return
         
-        print(f'no active command') # XXX remove
         for command_type in self.command_types:
             if command_type.matches(normalize_message(message.content)):
                 self.active_command = command_type(self.user_id, self.channel_id, self.server_connection, self.user_info_provider)
