@@ -25,15 +25,15 @@ pre MVP
 - add transactions query
 - add the following requests
   - withdraw
-  - trasnfer 
+  - trasnfer (under work)
 - add deposit
 - add withdraw
 - add import (include initial balance)
 - add error handling
 - add timeout to dialogs
-- support only DMs
 - replace web server for cb_server to waitress
 
 post MVP
 - auth authentication to cb_server module
 - add transaction id
+- add language support

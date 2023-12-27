@@ -8,6 +8,7 @@ import sys
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
+from cb_bot.command_utils import CommandUtils
 from cb_bot.user_context_provider import UserContextProvider
 from cb_bot.user_info_provider import UserInfoProvider
 from .transfer_command_handler import TransferCommandHandler
@@ -100,11 +101,15 @@ def main(args):
         execute_slow_tasks.start()
         # print message on general channel
         general_channel = [channel for channel in client.get_all_channels() if channel.name == 'general'][0]
-        await general_channel.send(f"Bot _{client.user}_ is ready\n" + 
-                                   "To ") # XXX complete this message
+        await general_channel.send(CommandUtils.highlight(f"**Bot __{client.user.display_name}__ is up and ready to work**\n" + 
+                                   "send me __hi__ in a private message to see the available commands", before=True))
 
     @client.event
     async def on_message(message):
+        # ignore message on anything but private channel
+        if not isinstance(message.channel, discord.channel.DMChannel):
+            return
+        
         # this is the string text message of the Message
         content = message.content
         # this is the sender of the Message
@@ -148,8 +153,8 @@ def main(args):
         print(f"Bot {client.user} is going to sleep")
         async def stop():
             if general_channel is not None:
-                await general_channel.send(f"Bot _{client.user}_ is going to sleep\n" + 
-                                            "Bye bye. ")
+                await general_channel.send(CommandUtils.highlight(f"**Bot __{client.user.display_name}__ is going to sleep**\n" + 
+                                            "Bye bye.", before=False))
             await client.close()
         
         fast_tasks.append(stop)
