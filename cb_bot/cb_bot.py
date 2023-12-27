@@ -8,6 +8,8 @@ import sys
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
+from cb_bot.user_context_provider import UserContextProvider
+from cb_bot.user_info_provider import UserInfoProvider
 from .transfer_command_handler import TransferCommandHandler
 from .balance_command_handler import BalanceCommandHandler
 from .dialog import Dialog
@@ -31,17 +33,6 @@ def parse_args(args):
     return {
         'bot_token': args[1] if len(args) == 2 else None
     }
-
-def get_dialog_key(user_id, channel_id):
-    return f'{user_id}-{channel_id}'
-
-def get_dialog(user_id, channel_id, dialogs):
-    key = get_dialog_key(user_id, channel_id)
-    return dialogs.get(key)
-
-def add_dialog(user_id, channel_id, dialog, dialogs):
-    key = get_dialog_key(user_id, channel_id)
-    dialogs[key] = dialog
 
 def main(args):
     default_config = Config(bot_token=None, cb_server_url='http://localhost:5000', mapper_path=None, is_debug=True)
@@ -74,10 +65,14 @@ def main(args):
     user_mapper = UserMapper(config.mapper_path)
     cb_server_connection = CBServerConnection(config.cb_server_url, user_mapper)
 
-    client = commands.Bot(command_prefix='', intents=intents)
-    dialogs = {}
     fast_tasks = [] # every second
+    slow_tasks = [] # every 10 seconds
 
+    client = commands.Bot(command_prefix='', intents=intents)
+    user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
+    user_context_provider = UserContextProvider()
+
+   
     # this is the channel used to send notifications to all users
     general_channel = None
 
@@ -93,6 +88,9 @@ def main(args):
     async def execute_slow_tasks():
         if len(client.guilds) > 1:
             raise Exception('More than one guild is not supported')
+        
+        for task in slow_tasks:
+            await task()
 
     @client.event
     async def on_ready():
@@ -123,13 +121,13 @@ def main(args):
 
         try:        
             # if there is an existing dialog for the user, use it
-            dialog = get_dialog(str(user.id), channel.id, dialogs)
+            dialog = user_context_provider.get_user_dialog(user_id, channel_id)
             if dialog:
                 await dialog.handle_message(message)
                 return
                     
-            dialog = Dialog(user_id, channel_id, command_types, cb_server_connection)
-            add_dialog(user_id, channel_id, dialog, dialogs)
+            dialog = Dialog(user_id, channel_id, command_types, cb_server_connection, user_info_provider)
+            user_context_provider.set_user_dialog(user_id, channel_id, dialog)
             await dialog.handle_message(message)
         except Exception as e:
             logging.exception(e)
@@ -138,7 +136,7 @@ def main(args):
             else:
                 await message.channel.send('Error: Handling message failed')
 
-            dialogs.pop(get_dialog_key(user_id, channel_id))
+            user_context_provider.unset_user_dialog(user_id, channel_id)
 
     is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
     def terminanation_handler(sig, frame):
