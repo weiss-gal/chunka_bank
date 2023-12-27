@@ -25,7 +25,6 @@ pre MVP
 - add transactions query
 - add the following requests
   - withdraw
-  - trasnfer (under work)
 - add deposit
 - add withdraw
 - add import (include initial balance)
