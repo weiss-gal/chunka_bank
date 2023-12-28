@@ -3,6 +3,7 @@ from typing import Callable
 from discord.ext import commands
 
 UserInfo = namedtuple('UserInfo', ['name', 'nickname', 'display_name' ])
+ExternalUserInfo = namedtuple('ExternalUserInfo', ['name', 'nickname', 'display_name', 'user_id' ])
 
 class UserInfoProvider:
 
@@ -26,8 +27,8 @@ class UserInfoProvider:
 
         register_task(update_users)
 
-    def get_user_info(self, user_id: str) -> UserInfo:
-        return self.users[user_id]
+    def get_user_info(self, user_id: str) -> ExternalUserInfo:
+        return ExternalUserInfo(user_id = user_id, **self.users[user_id]._asdict())
 
     def search_user(self, search_str: str) -> str:
         print("Searching for user: ", search_str) # XXX debug
@@ -41,9 +42,6 @@ class UserInfoProvider:
         
         return None
     
-    def get_all_users(self) -> list[UserInfo]:
-        return [self.users[k] for k in self.users.keys()]
-
-    
-
+    def get_all_users(self) -> list[ExternalUserInfo]:
+        return [self.get_user_info(k) for k in self.users.keys()]
 

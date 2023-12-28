@@ -108,10 +108,10 @@ def get_user_transactions(username):
     for t in transactions:
         transactions_list.append(UserTransactionInfo(
             userid=username,
-            transaction_id=None,
             amount=t[1],
             time=datetime.fromtimestamp(t[0]).isoformat() + 'Z',
-            description=t[2]
+            description=t[2],
+            id=t[3]
         ))
         
     # return the transactions

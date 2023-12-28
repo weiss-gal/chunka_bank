@@ -9,6 +9,7 @@ import sys
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
 from cb_bot.command_utils import CommandUtils
+from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_context_provider import UserContextProvider
 from cb_bot.user_info_provider import UserInfoProvider
 from .transfer_command_handler import TransferCommandHandler
@@ -72,8 +73,8 @@ def main(args):
     client = commands.Bot(command_prefix='', intents=intents)
     user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
     user_context_provider = UserContextProvider()
+    updates_manager = UpdatesManager(cb_server_connection, user_info_provider, lambda t: slow_tasks.append(t))
 
-   
     # this is the channel used to send notifications to all users
     general_channel = None
 

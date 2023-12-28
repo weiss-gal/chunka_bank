@@ -1,5 +1,6 @@
 import datetime
 import sqlite3
+import uuid
 
 BALANCE_TABLE = 'user_balance'
 USER_TABLE = 'user'
@@ -11,6 +12,7 @@ OVERDRAFT_LIMIT_KEY = 'overdraft_limit'
 VALUE_KEY = 'value'
 TIMESTAMP_KEY = 'timestamp'
 DESCRIPTION_KEY = 'description'
+ID_KEY = 'id'
 
 class RepoException(Exception):
     pass
@@ -85,14 +87,15 @@ class Repo:
             return False, 'Insufficient funds'
         
         timestamp = int(datetime.datetime.now().timestamp())
+        guid = str(uuid.uuid4()) # guid is unique for user.
         cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (to_userid,))
         to_balance = float(cursor.fetchone()[0])
         cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (from_balance - value, from_userid))
         cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (to_balance + value, to_userid))
-        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}) 
-                           VALUES (?, ?, ?, ?)''', (from_userid, -value, timestamp, description))
-        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}) 
-                           VALUES (?, ?, ?, ?)''', (to_userid, value, timestamp, description))
+        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
+                           VALUES (?, ?, ?, ?, ?)''', (from_userid, -value, timestamp, description, guid))
+        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
+                           VALUES (?, ?, ?, ?, ?)''', (to_userid, value, timestamp, description, guid))
         conn.commit()
         conn.close()
 
@@ -109,7 +112,7 @@ class Repo:
 
         limit_part = f'LIMIT {last_n}' if last_n is not None else ''
 
-        cursor.execute(f'SELECT {TIMESTAMP_KEY}, {VALUE_KEY}, {DESCRIPTION_KEY} FROM {TRANACTIONS_TABLE} ' +
+        cursor.execute(f'SELECT {TIMESTAMP_KEY}, {VALUE_KEY}, {DESCRIPTION_KEY}, {ID_KEY} FROM {TRANACTIONS_TABLE} ' +
                        f'WHERE {" AND ".join(where_parts)} ORDER BY {TIMESTAMP_KEY} DESC ' + 
                        limit_part , (userid,))
         res = cursor.fetchall()

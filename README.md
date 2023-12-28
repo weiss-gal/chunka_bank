@@ -21,7 +21,7 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre MVP
-- add notification
+- add notification (under work)
 - add transactions query
 - add the following requests
   - withdraw
