@@ -27,7 +27,6 @@ class UpdatesManager:
             # get all transactions since the last update
             try:
                 transactions = await self.cb_server_connection.get_user_transactions(user_id, from_timestamp=last_update)
-                print(f"Got transactions for user {user_id}: {transactions}") # XXX debug
             except CBServerNoUserException as e:
                 # This is actually a valid use case when a user is added to the discord server but does not have mapping to a CB user yet
                 logging.warning(f"Failed to get transactions for user {user_id}")
@@ -41,7 +40,6 @@ class UpdatesManager:
                 print(f"New transaction for user {user_id}: {transaction}")
                 
             self.last_update[user_id] = now_timestamp, new_transaction_ids
-
 
     def __init__(self, cb_server_connection: CBServerConnection, user_info_provider: UserInfoProvider, register_task: Callable):
         self.cb_server_connection: CBServerConnection = cb_server_connection

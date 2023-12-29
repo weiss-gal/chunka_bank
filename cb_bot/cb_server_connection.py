@@ -43,7 +43,7 @@ class CBServerConnection:
                     return
                 
                 raise await self.get_server_exception(resp)
-             
+    
     async def get_user_balance(self, user_id: str):
         cb_user_id = self.mapper.get_cb_user_id(user_id)
         if cb_user_id is None:
@@ -71,11 +71,9 @@ class CBServerConnection:
             if to_timestamp is not None:
                 query_params['to_time'] = datetime.fromtimestamp(to_timestamp, tz=timezone.utc).isoformat()
 
-            print(f'query_params: {query_params}')
             async with session.get(f'{self.server_url}/user/{cb_user_id}/transactions', params=query_params) as resp:
                 if resp.status == 200:
                     resp_json = await resp.json()
-                    print(f'got transactions: [{type(resp_json)}]{resp_json}')
                     return [UserTransactionInfo(**t) for t in resp_json]
                     
                 if resp.status == 404:

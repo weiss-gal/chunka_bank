@@ -1,6 +1,7 @@
 from collections import namedtuple
 import logging
 import signal
+from typing import List
 import discord
 from discord.ext import tasks
 from discord.ext import commands
@@ -10,11 +11,10 @@ from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
 from cb_bot.command_utils import CommandUtils
 from cb_bot.updates_manager import UpdatesManager
-from cb_bot.user_context_provider import UserContextProvider
+from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
 from .transfer_command_handler import TransferCommandHandler
 from .balance_command_handler import BalanceCommandHandler
-from .dialog import Dialog
 
 Config = namedtuple('Config', ['bot_token', 'cb_server_url', 'mapper_path', 'is_debug'])
 
@@ -67,12 +67,17 @@ def main(args):
     user_mapper = UserMapper(config.mapper_path)
     cb_server_connection = CBServerConnection(config.cb_server_url, user_mapper)
 
-    fast_tasks = [] # every second
-    slow_tasks = [] # every 10 seconds
+    def handle_quable_interaction(interaction):
+        
+        pass
+
+
+    fast_tasks: List[callable] = [] # every second
+    slow_tasks: List[callable] = [] # every 10 seconds
 
     client = commands.Bot(command_prefix='', intents=intents)
     user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
-    user_context_provider = UserContextProvider()
+    user_interaction_manager = UserInteractionManager(command_types, cb_server_connection, user_info_provider)
     updates_manager = UpdatesManager(cb_server_connection, user_info_provider, lambda t: slow_tasks.append(t))
 
     # this is the channel used to send notifications to all users
@@ -122,27 +127,13 @@ def main(args):
         if user == client.user:
             return
         
-        user_id = str(user.id)
-        channel_id = str(channel.id)
-
-        try:        
-            # if there is an existing dialog for the user, use it
-            dialog = user_context_provider.get_user_dialog(user_id, channel_id)
-            if dialog:
-                await dialog.handle_message(message)
-                return
-                    
-            dialog = Dialog(user_id, channel_id, command_types, cb_server_connection, user_info_provider)
-            user_context_provider.set_user_dialog(user_id, channel_id, dialog)
-            await dialog.handle_message(message)
+        try:
+            await user_interaction_manager.handle_message(message)
         except Exception as e:
-            logging.exception(e)
             if config.is_debug:
-                await message.channel.send(f'Error: {e}')
-            else:
-                await message.channel.send('Error: Handling message failed')
-
-            user_context_provider.unset_user_dialog(user_id, channel_id)
+                raise e
+            
+            await channel.send(f"Internal error: {e}")
 
     is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
     def terminanation_handler(sig, frame):

@@ -1,10 +1,11 @@
 import discord
 
 from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.interaction_handler import InteractionHandler
 from cb_bot.user_info_provider import UserInfoProvider
 
 # Abstract class for a command
-class CommandHandler():
+class CommandHandler(InteractionHandler):
     def matches(message: str) -> bool:
         raise NotImplementedError
     
