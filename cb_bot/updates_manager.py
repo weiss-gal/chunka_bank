@@ -21,20 +21,27 @@ class UpdatesManager:
     async def poll_updates(self):
         self.refresh_users()
         for user_id in self.last_update.keys():
-            last_update, transaction_ids = self.last_update[user_id]
+            last_update, transaction_ids = self.last_update.get(user_id, (datetime.datetime.now().timestamp(), set()))
+            # cache the before the request to avoid missing transactions that happened during the request
+            now_timestamp = datetime.datetime.now().timestamp() 
             # get all transactions since the last update
             try:
                 transactions = await self.cb_server_connection.get_user_transactions(user_id, from_timestamp=last_update)
+                print(f"Got transactions for user {user_id}: {transactions}") # XXX debug
             except CBServerNoUserException as e:
                 # This is actually a valid use case when a user is added to the discord server but does not have mapping to a CB user yet
                 logging.warning(f"Failed to get transactions for user {user_id}")
                 continue
 
+            new_transaction_ids = set()
             for transaction in transactions:
                 if transaction.id in transaction_ids:
                     continue
-
+                new_transaction_ids.add(transaction.id) # cache the new set of transaction ids
                 print(f"New transaction for user {user_id}: {transaction}")
+                
+            self.last_update[user_id] = now_timestamp, new_transaction_ids
+
 
     def __init__(self, cb_server_connection: CBServerConnection, user_info_provider: UserInfoProvider, register_task: Callable):
         self.cb_server_connection: CBServerConnection = cb_server_connection

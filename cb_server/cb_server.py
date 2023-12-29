@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from json import JSONEncoder
 import os
 from typing import List
@@ -109,13 +109,13 @@ def get_user_transactions(username):
         transactions_list.append(UserTransactionInfo(
             userid=username,
             amount=t[1],
-            time=datetime.fromtimestamp(t[0]).isoformat() + 'Z',
+            time=datetime.fromtimestamp(t[0], timezone.utc).isoformat(),
             description=t[2],
             id=t[3]
         ))
         
     # return the transactions
-    return flask.jsonify(transactions_list)
+    return flask.jsonify([t._asdict() for t in transactions_list])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
