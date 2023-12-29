@@ -1,5 +1,5 @@
 # chunka_bank
-a famility pseudo banking application
+a family pseudo banking application
 
 ## How to run
 - Start the server using the following command:
