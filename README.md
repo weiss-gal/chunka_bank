@@ -21,7 +21,9 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre MVP
-- add transactions query
+- add transactions query (under work)
+  - handle 4000 chars limit
+  - format output propertly
 - add the following requests
   - withdraw
 - add deposit
@@ -33,5 +35,5 @@ pre MVP
 
 post MVP
 - auth authentication to cb_server module
-- add transaction id
 - add language support
+
