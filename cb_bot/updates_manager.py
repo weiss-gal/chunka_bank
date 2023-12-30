@@ -1,8 +1,13 @@
 import datetime
 import logging
-from typing import Callable, Dict, Tuple, Set
+from typing import Callable, Dict, List, Tuple, Set
+
+import tabulate
 from cb_bot.cb_server_connection import CBServerConnection, CBServerNoUserException
+from cb_bot.common import get_user_printable_time
+from cb_bot.notification_handler import NotificationHandler
 from cb_bot.user_info_provider import UserInfoProvider
+from models.transactions import UserTransactionInfo
 
 class UpdatesManager:
     def refresh_users(self):
@@ -18,6 +23,19 @@ class UpdatesManager:
                 logging.info(f"Removing user {user_id} from updates manager")
                 del self.last_update[user_id]
 
+    def get_transactions_table(self, transactions: List[UserTransactionInfo]):
+        headers = ['Time', 'Amount', 'Description', 'Transaction ID']
+        table = [
+            [
+                get_user_printable_time(t.timestamp),
+                t.amount,
+                t.description,
+                t.id
+            ] for t in transactions
+        ]
+
+        return tabulate.tabulate(table, headers=headers, tablefmt='orgtbl')
+
     async def poll_updates(self):
         self.refresh_users()
         for user_id in self.last_update.keys():
@@ -32,18 +50,24 @@ class UpdatesManager:
                 logging.warning(f"Failed to get transactions for user {user_id}")
                 continue
 
-            new_transaction_ids = set()
+            new_transactions : List[UserTransactionInfo] = []
             for transaction in transactions:
                 if transaction.id in transaction_ids:
                     continue
-                new_transaction_ids.add(transaction.id) # cache the new set of transaction ids
+                new_transactions.append(transaction) # cache the new set of transaction ids
                 print(f"New transaction for user {user_id}: {transaction}")
+               
                 
-            self.last_update[user_id] = now_timestamp, new_transaction_ids
+            self.last_update[user_id] = now_timestamp, set([t.id for t in new_transactions])
+            if len(new_transactions) > 0:
+                self.queue_interaction(user_id, NotificationHandler(user_id, "The following transactions were reported in your account:\n" +
+                    f"```{self.get_transactions_table(new_transactions)}```"))
 
-    def __init__(self, cb_server_connection: CBServerConnection, user_info_provider: UserInfoProvider, register_task: Callable):
+    def __init__(self, cb_server_connection: CBServerConnection, user_info_provider: UserInfoProvider, register_task: Callable, 
+                 queue_interaction: Callable):
         self.cb_server_connection: CBServerConnection = cb_server_connection
         self.user_info_provider: UserInfoProvider = user_info_provider
+        self.queue_interaction = queue_interaction
         # mapping from user id to last update timestamp and a set of the last transactions ids
         # the latter part is required because we can't rely on the timestamp alone, since timestamp 
         # resolution is 1 second and we can have multiple transactions in the same second

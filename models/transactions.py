@@ -1,4 +1,4 @@
 from collections import namedtuple
 
-
-UserTransactionInfo = namedtuple('UserTransactionInfo', ['userid', 'amount', 'time', 'description', 'id'])
+# time is saved as linux timestamp
+UserTransactionInfo = namedtuple('UserTransactionInfo', ['userid', 'amount', 'timestamp', 'description', 'id'])

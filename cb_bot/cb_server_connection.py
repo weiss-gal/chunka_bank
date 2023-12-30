@@ -59,6 +59,14 @@ class CBServerConnection:
                 else:
                     raise Exception(f'Unexpected status code: {resp.status}') 
 
+    def get_transaction_info(self, user_id: str, transaction: dict) -> UserTransactionInfo:
+        return UserTransactionInfo(
+            userid=user_id,
+            id=transaction['id'],
+            timestamp=datetime.fromisoformat(transaction['time']).timestamp(),
+            amount=transaction['amount'],
+            description=transaction['description'])
+
     async def get_user_transactions(self, user_id: str, from_timestamp: int = None, to_timestamp: int = None) -> List[UserTransactionInfo]:
         cb_user_id = self.mapper.get_cb_user_id(user_id)
         if cb_user_id is None:
@@ -74,7 +82,7 @@ class CBServerConnection:
             async with session.get(f'{self.server_url}/user/{cb_user_id}/transactions', params=query_params) as resp:
                 if resp.status == 200:
                     resp_json = await resp.json()
-                    return [UserTransactionInfo(**t) for t in resp_json]
+                    return [self.get_transaction_info(user_id, t) for t in resp_json]
                     
                 if resp.status == 404:
                     return None
