@@ -10,6 +10,7 @@ import sys
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
 from cb_bot.command_utils import CommandUtils
+from cb_bot.request_handler import NotificationHandler
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
@@ -77,7 +78,7 @@ def main(args):
 
     client = commands.Bot(command_prefix='', intents=intents)
     user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
-    user_interaction_manager = UserInteractionManager(command_types, cb_server_connection, user_info_provider)
+    user_interaction_manager = UserInteractionManager(command_types, cb_server_connection, user_info_provider, lambda t: fast_tasks.append(t))
     updates_manager = UpdatesManager(cb_server_connection, user_info_provider, lambda t: slow_tasks.append(t))
 
     # this is the channel used to send notifications to all users
@@ -98,6 +99,8 @@ def main(args):
         
         for task in slow_tasks:
             await task()
+
+        user_interaction_manager.queue_interaction('871404610781327441', NotificationHandler('871404610781327441', 'Good morning gal'))
 
     @client.event
     async def on_ready():

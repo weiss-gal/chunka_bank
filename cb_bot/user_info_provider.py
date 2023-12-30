@@ -2,8 +2,8 @@ from collections import namedtuple
 from typing import Callable
 from discord.ext import commands
 
-UserInfo = namedtuple('UserInfo', ['name', 'nickname', 'display_name' ])
-ExternalUserInfo = namedtuple('ExternalUserInfo', ['name', 'nickname', 'display_name', 'user_id' ])
+UserInfo = namedtuple('UserInfo', ['name', 'nickname', 'display_name', 'dm_channel'])
+ExternalUserInfo = namedtuple('ExternalUserInfo', ['user_id', 'name', 'nickname', 'display_name', 'dm_channel' ])
 
 class UserInfoProvider:
 
@@ -21,8 +21,12 @@ class UserInfoProvider:
                 if user_id in self.users:
                     user_dict = self.users[user_id]._asdict()
                 
+                # create dm channel if needed
+                if member.dm_channel is None:
+                    await member.create_dm()
                 # merge the updated info into the user dict
-                user_dict = {**user_dict, 'name': member.name, 'nickname': member.global_name, 'display_name': member.display_name}
+                user_dict = {**user_dict, 'name': member.name, 'nickname': member.global_name, 'display_name': member.display_name, 
+                             'dm_channel': member.dm_channel}
                 self.users[user_id] = UserInfo(**user_dict)
 
         register_task(update_users)
