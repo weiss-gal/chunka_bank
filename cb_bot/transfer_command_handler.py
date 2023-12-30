@@ -30,7 +30,7 @@ class TransferCommandHandler(CommandHandler):
     def matches(message: str) -> bool:
         return CommandUtils.split_message(message)[0] == TransferCommandHandler.PHRASE
     
-    def get_phrase() -> str:
+    def get_prefix() -> str:
         return TransferCommandHandler.PHRASE
     
     def resolve_user_id(self, user_str: str) -> str:

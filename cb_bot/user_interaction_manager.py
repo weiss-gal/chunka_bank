@@ -110,7 +110,9 @@ class UserInteractionManager:
                 return
             
         # No known command matches the message
-        help_message = 'I can help you with the following commands: \n' + '\n'.join([f"  {command.get_phrase()}" for command in self.command_types])
+        commands = [command.get_prefix() for command in self.command_types]
+        commands.sort()
+        help_message = 'I can help you with the following commands: \n' + '\n'.join([f"  **{command}**" for command in commands])
         if normalize_message(message.content) in UserInteractionManager.HELLO_PHRASES:
             return await message.channel.send('Hello! I am the Chunka Bank bot. ' + help_message)
     

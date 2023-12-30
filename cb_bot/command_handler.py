@@ -9,7 +9,10 @@ class CommandHandler(InteractionHandler):
     def matches(message: str) -> bool:
         raise NotImplementedError
     
-    def get_phrase() -> str:
+    def get_prefix() -> str:
+        raise NotImplementedError
+    
+    def get_brief() -> str:
         raise NotImplementedError
 
     def __init__(self, user_id, channel_id, server_connection: CBServerConnection, user_info_provider: UserInfoProvider):

@@ -67,7 +67,8 @@ class CBServerConnection:
             amount=transaction['amount'],
             description=transaction['description'])
 
-    async def get_user_transactions(self, user_id: str, from_timestamp: int = None, to_timestamp: int = None) -> List[UserTransactionInfo]:
+    async def get_user_transactions(self, user_id: str, from_timestamp: int = None, to_timestamp: int = None, last_n: int = None) \
+        -> List[UserTransactionInfo]:
         cb_user_id = self.mapper.get_cb_user_id(user_id)
         if cb_user_id is None:
             raise CBServerNoUserException(user_id)
@@ -78,6 +79,8 @@ class CBServerConnection:
                 query_params['from_time'] = datetime.fromtimestamp(from_timestamp, tz=timezone.utc).isoformat()
             if to_timestamp is not None:
                 query_params['to_time'] = datetime.fromtimestamp(to_timestamp, tz=timezone.utc).isoformat()
+            if last_n is not None:
+                query_params['last_n'] = last_n
 
             async with session.get(f'{self.server_url}/user/{cb_user_id}/transactions', params=query_params) as resp:
                 if resp.status == 200:
