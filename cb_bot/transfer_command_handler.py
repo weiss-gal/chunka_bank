@@ -1,9 +1,9 @@
 from enum import Enum
-from typing import List, Tuple
+from typing import List
 import discord
 import re
 
-from cb_bot.cb_server_connection import CBServerConnection, CBServerException
+from cb_bot.cb_server_connection import CBServerException
 from .command_handler import CommandHandler
 from .command_utils import CommandUtils
 class CommandStatus(Enum):
@@ -84,7 +84,7 @@ class TransferCommandHandler(CommandHandler):
             self.description = f"Transfer {self.amount} from '{self.user_info_provider.get_user_info(self.user_id).display_name}' " + \
                 f"to '{self.user_info_provider.get_user_info(self.to).display_name}'"
         self.status = CommandStatus.PENDING_CONFIRMATION
-        return f"You are about to transfer {self.amount} to '{self.user_info_provider.get_user_info(self.to).display_name}' " + \
+        return f"You are about to transfer {self.amount} to **{self.user_info_provider.get_user_info(self.to).display_name}** " + \
             f"with description\n`{self.description}`\n" + \
             f"Please confirm by typing *yes* or *y*"
 

@@ -56,7 +56,6 @@ class UpdatesManager:
                     continue
                 new_transactions.append(transaction) # cache the new set of transaction ids
                 print(f"New transaction for user {user_id}: {transaction}")
-               
                 
             self.last_update[user_id] = now_timestamp, set([t.id for t in new_transactions])
             if len(new_transactions) > 0:
