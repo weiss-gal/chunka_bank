@@ -1,6 +1,7 @@
 from typing import Type
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.cb_user_mapper import UserMapper
 from cb_bot.commands.command_handler import CommandHandler
 from cb_bot.common import normalize_message
 from cb_bot.commands.interaction_handler import InteractionHandler
@@ -74,7 +75,7 @@ class UserInteractionManager:
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
     def __init__(self, command_types: list[Type[CommandHandler]], cb_server_connection: CBServerConnection, 
-                 user_info_provider: UserInfoProvider, register_fast_task: callable):
+                 user_info_provider: UserInfoProvider, user_mapper: UserMapper, register_fast_task: callable):
         
         if any([any([command_type.matches(phrase) for phrase in UserInteractionManager.HELLO_PHRASES]) for command_type in command_types]):
             raise Exception('Command has a conflict with hello phrases')
@@ -82,12 +83,16 @@ class UserInteractionManager:
         self.command_types = command_types
         self.server_connection = cb_server_connection
         self.user_info_provider = user_info_provider
+        self.user_mapper = user_mapper
         self.user_interaction_provider = UserChannelStateProvider()
         
         # mapping from user id and channel id to interaction handler
         self.users: dict[str, dict[str, UserChannelState]] = {}
 
         register_fast_task(self.process_queued_interactions)
+
+    def get_user_command_types(self, user_id: str) -> list[Type[CommandHandler]]:
+        return [command_type for command_type in self.command_types if command_type.is_allowed(self.user_mapper.get_user_mapper_info(user_id))]
 
     async def handle_message(self, message: discord.Message):
         user_id = str(message.author.id)
@@ -101,7 +106,7 @@ class UserInteractionManager:
             return
     
         # There is no existing interaction for the user, try to create one
-        for command_type in self.command_types:
+        for command_type in self.get_user_command_types(user_id):
             if command_type.matches(normalize_message(message.content)):
                 command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider)
                 self.user_interaction_provider.set_interaction(user_id, channel_id, command)
@@ -110,7 +115,7 @@ class UserInteractionManager:
                 return
             
         # No known command matches the message
-        commands = [command.get_prefix() for command in self.command_types]
+        commands = [command.get_prefix() for command in self.get_user_command_types(user_id)]
         commands.sort()
         help_message = 'I can help you with the following commands: \n' + '\n'.join([f"  **{command}**" for command in commands])
         if normalize_message(message.content) in UserInteractionManager.HELLO_PHRASES:

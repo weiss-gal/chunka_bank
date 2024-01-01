@@ -1,6 +1,7 @@
 import discord
 
 from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.cb_user_mapper import UserMappingInfo
 from cb_bot.commands.interaction_handler import InteractionHandler
 from cb_bot.user_info_provider import UserInfoProvider
 
@@ -14,6 +15,10 @@ class CommandHandler(InteractionHandler):
     
     def get_brief() -> str:
         raise NotImplementedError
+    
+    def is_allowed(user_mapping_info: UserMappingInfo) -> bool:
+        # by defaul, all commands are allowed
+        return True
 
     def __init__(self, user_id, channel_id, server_connection: CBServerConnection, user_info_provider: UserInfoProvider):
         self.user_id = user_id

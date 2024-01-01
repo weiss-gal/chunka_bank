@@ -9,13 +9,14 @@ import sys
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
+from cb_bot.commands.balance_command_handler import BalanceCommandHandler
 from cb_bot.commands.command_utils import CommandUtils
+from cb_bot.commands.deposit_command_handler import DepositCommandHandler
 from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
+from cb_bot.commands.transfer_command_handler import TransferCommandHandler
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
-from .commands.transfer_command_handler import TransferCommandHandler
-from .commands.balance_command_handler import BalanceCommandHandler
 
 Config = namedtuple('Config', ['bot_token', 'cb_server_url', 'mapper_path', 'is_debug'])
 
@@ -60,6 +61,7 @@ def main(args):
         BalanceCommandHandler,
         TransferCommandHandler, 
         TransactionsCommandHandler,
+        DepositCommandHandler
     ]
 
     intents = discord.Intents.default()
@@ -79,7 +81,7 @@ def main(args):
 
     client = commands.Bot(command_prefix='', intents=intents)
     user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
-    user_interaction_manager = UserInteractionManager(command_types, cb_server_connection, user_info_provider, lambda t: fast_tasks.append(t))
+    user_interaction_manager = UserInteractionManager(command_types, cb_server_connection, user_info_provider, user_mapper, lambda t: fast_tasks.append(t))
     updates_manager = UpdatesManager(cb_server_connection, user_info_provider, lambda t: slow_tasks.append(t), 
                                      user_interaction_manager.queue_interaction)
 

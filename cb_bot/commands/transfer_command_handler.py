@@ -35,6 +35,10 @@ class TransferCommandHandler(CommandHandler):
     
     def resolve_user_id(self, user_str: str) -> str:
         return self.user_info_provider.search_user(user_str)
+    
+    def get_default_description(self) -> str:
+        return f"Transfer {self.amount} from '{self.user_info_provider.get_user_info(self.user_id).display_name}' " + \
+                f"to '{self.user_info_provider.get_user_info(self.to).display_name}'"
 
     def handle_full_command(self, command_parts: List[str]) -> str:
         """
@@ -42,7 +46,7 @@ class TransferCommandHandler(CommandHandler):
         If the command is invalid, the error message is returned as well
         """
         invalid_format = 'Invalid command format, use:\n' + \
-            f'  `{TransferCommandHandler.FORMAT}`'
+            f'  `{type(self).FORMAT}`'
 
         # anyting from the 5th part is considered description
         if len(command_parts) < 4:
@@ -81,8 +85,8 @@ class TransferCommandHandler(CommandHandler):
             # remove heading or trailing double/single quotes
             self.description = re.sub(r'''^['"]?|['"]$''', '', ' '.join(command_parts[4:])).strip()
         else:
-            self.description = f"Transfer {self.amount} from '{self.user_info_provider.get_user_info(self.user_id).display_name}' " + \
-                f"to '{self.user_info_provider.get_user_info(self.to).display_name}'"
+            self.description = self.get_default_description()
+
         self.status = CommandStatus.PENDING_CONFIRMATION
         return f"You are about to transfer {self.amount} to **{self.user_info_provider.get_user_info(self.to).display_name}** " + \
             f"with description\n`{self.description}`\n" + \
@@ -107,7 +111,7 @@ class TransferCommandHandler(CommandHandler):
         response = None
         if self.status == CommandStatus.START:
             if len(command_parts) == 1:
-                await message.channel.send(f'Please use the following format:\n  `{TransferCommandHandler.FORMAT}`')
+                await message.channel.send(f'Please use the following format:\n  `{type(self).FORMAT}`')
                 return True
             response = self.handle_full_command(command_parts)
         elif self.status == CommandStatus.PENDING_CONFIRMATION:
@@ -117,3 +121,4 @@ class TransferCommandHandler(CommandHandler):
 
         if response: await message.channel.send(response)
         return self.status == CommandStatus.COMPLETED
+

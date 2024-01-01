@@ -21,11 +21,12 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre MVP
-- add deposit - no confirmation needed
 - add withdraw - request 
 - add import (include initial balance)
 - add timeout to dialogs
 - replace web server for cb_server to waitress
+- change time in transactions table to be user-friendly (there should
+  already be a function for that)
 
 post MVP
 - add transfer request - request 

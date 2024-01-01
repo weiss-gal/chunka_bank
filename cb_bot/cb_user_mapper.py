@@ -1,28 +1,30 @@
+from collections import namedtuple
 import csv
-from typing import Optional
+
+UserMappingInfo = namedtuple('UserMappingInfo', ['cb_user_id', 'is_admin'])
 
 class UserMapper:
     """A utility class that is used to map discord users to cb users"""
+    DEFAULT_INFO = UserMappingInfo(cb_user_id=None, is_admin=False)
+
     def __init__(self, mapper_path: str):
         self.mapper_path = mapper_path
         reader = csv.reader(open(mapper_path, 'r'))
         
         next(reader)
-        self.discord_2_cb_map = {}
-        self.cb_2_discord_map = {}
+        self.user_map = {}
         for row in reader:
-            self.discord_2_cb_map[row[0]] = row[1]
-            self.cb_2_discord_map[row[1]] = row[0]
-
-        print("User map: ", self.discord_2_cb_map) # XXX debug
+            cb_user_id = row[1]
+            is_admin = row[2].lower() in ['true', 'yes', 'y', '1']
+            self.user_map[row[0]] = UserMappingInfo(cb_user_id, is_admin)
 
     def get_cb_user_id(self, discord_user_id: str) -> str:
-        print(f"getting cb user id for discord user id: [{type(discord_user_id)}] {discord_user_id}") # XXX debug
-        print("user map: ", self.discord_2_cb_map) # XXX debug
-        result = self.discord_2_cb_map.get(discord_user_id)
-        print("result: ", result)
+        result = self.user_map.get(discord_user_id, UserMapper.DEFAULT_INFO).cb_user_id
         return result
     
-    def get_discord_user_id(self, cb_user_id: str) -> Optional[str]:
-        return self.cb_2_discord_map.get(cb_user_id)
+    def is_admin(self, discord_user_id: str) -> bool:
+        return self.user_map.get(discord_user_id, UserMapper.DEFAULT_INFO).is_admin
+    
+    def get_user_mapper_info(self, discord_user_id: str) -> UserMappingInfo:
+        return self.user_map.get(discord_user_id, UserMapper.DEFAULT_INFO)
 
