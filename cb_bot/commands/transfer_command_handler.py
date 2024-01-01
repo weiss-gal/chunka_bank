@@ -99,7 +99,7 @@ class TransferCommandHandler(CommandHandler):
         except CBServerException as e:
             return f"Failed to transfer money: [{e.server_error.error_code}]{e.server_error.error_msg}"
         
-        return None # no need for report, notifications are sent automatically.
+        return 'Money transfered successfully'
     
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
