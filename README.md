@@ -20,13 +20,16 @@ python -m cb_bot.cb_bot
 - Add user in repo and server
 
 ## TODO
-pre MVP
+pre Trial
 - add withdraw - request 
 - add import (include initial balance)
 - add timeout to dialogs
-- replace web server for cb_server to waitress
+
 - change time in transactions table to be user-friendly (there should
   already be a function for that)
+
+pre MVP
+- replace web server for cb_server to waitress
 
 post MVP
 - add transfer request - request 
