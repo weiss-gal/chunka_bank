@@ -1,6 +1,6 @@
 import discord
-from cb_bot.command_utils import CommandUtils
-from cb_bot.request_handler import RequestHandler
+from cb_bot.commands.command_utils import CommandUtils
+from cb_bot.commands.request_handler import RequestHandler
 
 class NotificationHandler(RequestHandler):
     def __init__(self, user_id: str, message: str):

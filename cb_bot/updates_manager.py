@@ -2,11 +2,11 @@ import datetime
 import logging
 from typing import Callable, Dict, List, Tuple, Set
 
-import tabulate
+
 from cb_bot.cb_server_connection import CBServerConnection, CBServerNoUserException
-from cb_bot.command_utils import CommandUtils
+from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.common import get_user_printable_time
-from cb_bot.notification_handler import NotificationHandler
+from cb_bot.commands.notification_handler import NotificationHandler
 from cb_bot.user_info_provider import UserInfoProvider
 from models.transactions import UserTransactionInfo
 

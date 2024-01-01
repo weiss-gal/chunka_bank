@@ -9,13 +9,13 @@ import sys
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
-from cb_bot.command_utils import CommandUtils
-from cb_bot.transactions_command_handler import TransactionsCommandHandler
+from cb_bot.commands.command_utils import CommandUtils
+from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
-from .transfer_command_handler import TransferCommandHandler
-from .balance_command_handler import BalanceCommandHandler
+from .commands.transfer_command_handler import TransferCommandHandler
+from .commands.balance_command_handler import BalanceCommandHandler
 
 Config = namedtuple('Config', ['bot_token', 'cb_server_url', 'mapper_path', 'is_debug'])
 

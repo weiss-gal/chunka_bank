@@ -3,7 +3,7 @@ from typing import List
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
 
-from cb_bot.command_utils import CommandUtils
+from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.user_info_provider import UserInfoProvider
 from .command_handler import CommandHandler
 

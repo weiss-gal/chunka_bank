@@ -1,10 +1,10 @@
 from typing import Type
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
-from cb_bot.command_handler import CommandHandler
+from cb_bot.commands.command_handler import CommandHandler
 from cb_bot.common import normalize_message
-from cb_bot.interaction_handler import InteractionHandler
-from cb_bot.request_handler import RequestHandler
+from cb_bot.commands.interaction_handler import InteractionHandler
+from cb_bot.commands.request_handler import RequestHandler
 from cb_bot.user_info_provider import UserInfoProvider
 
 class UserChannelState:

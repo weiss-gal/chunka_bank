@@ -4,7 +4,7 @@ Request is a special type of interaction that is not initiated by the user, but 
 It may be a one time notification, or a request for a response from the user
 '''
 import discord
-from cb_bot.interaction_handler import InteractionHandler
+from cb_bot.commands.interaction_handler import InteractionHandler
 
 class RequestHandler(InteractionHandler):
     def __init__(self, user_id: str):
