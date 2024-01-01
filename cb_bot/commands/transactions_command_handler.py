@@ -95,7 +95,8 @@ class TransactionsCommandHandler(CommandHandler):
         result = await self.server_connection.get_user_transactions(self.user_id, from_timestamp=self.from_date, to_timestamp=to_date, \
             last_n=self.last_n)
 
-        return f'```{result}```' # debug only
+        transaction_lines = CommandUtils.get_transactions_table(result)
+        return transaction_lines if len(result) > 0 else 'No transactions found'
 
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
@@ -120,5 +121,6 @@ class TransactionsCommandHandler(CommandHandler):
                 f"{' ' * element_offset}{'^' * element_len}```\n" + \
                 f"{str(e)}"
                      
-        await message.channel.send(msg)
+        for msg_part in CommandUtils.slice_message(msg):
+            await message.channel.send(msg_part)
         return True

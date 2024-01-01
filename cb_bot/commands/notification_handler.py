@@ -1,4 +1,5 @@
 import discord
+from cb_bot.command_utils import CommandUtils
 from cb_bot.request_handler import RequestHandler
 
 class NotificationHandler(RequestHandler):
@@ -8,7 +9,9 @@ class NotificationHandler(RequestHandler):
 
     async def initiate_interaction(self, channel: discord.channel) -> bool:
         print(f"sending notification to user id {self.user_id}:  {self.message}")
-        await channel.send(self.message)
+        for msg_part in CommandUtils.slice_message(self.message):
+            await channel.send(msg_part)
+
         return True
 
     async def handle_message(self, message: discord.Message) -> bool:

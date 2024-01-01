@@ -4,6 +4,7 @@ from typing import Callable, Dict, List, Tuple, Set
 
 import tabulate
 from cb_bot.cb_server_connection import CBServerConnection, CBServerNoUserException
+from cb_bot.command_utils import CommandUtils
 from cb_bot.common import get_user_printable_time
 from cb_bot.notification_handler import NotificationHandler
 from cb_bot.user_info_provider import UserInfoProvider
@@ -22,19 +23,6 @@ class UpdatesManager:
             if user_id not in {u.user_id for u in all_users}:
                 logging.info(f"Removing user {user_id} from updates manager")
                 del self.last_update[user_id]
-
-    def get_transactions_table(self, transactions: List[UserTransactionInfo]):
-        headers = ['Time', 'Amount', 'Description', 'Transaction ID']
-        table = [
-            [
-                get_user_printable_time(t.timestamp),
-                t.amount,
-                t.description,
-                t.id
-            ] for t in transactions
-        ]
-
-        return tabulate.tabulate(table, headers=headers, tablefmt='orgtbl')
 
     async def poll_updates(self):
         self.refresh_users()
@@ -60,7 +48,7 @@ class UpdatesManager:
             self.last_update[user_id] = now_timestamp, set([t.id for t in new_transactions])
             if len(new_transactions) > 0:
                 self.queue_interaction(user_id, NotificationHandler(user_id, "The following transactions were reported in your account:\n" +
-                    f"```{self.get_transactions_table(new_transactions)}```"))
+                    CommandUtils.get_transactions_table(new_transactions)))
 
     def __init__(self, cb_server_connection: CBServerConnection, user_info_provider: UserInfoProvider, register_task: Callable, 
                  queue_interaction: Callable):
