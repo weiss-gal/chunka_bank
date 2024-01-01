@@ -21,19 +21,14 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre MVP
-- add transactions query (under work)
-  - handle 4000 chars limit
-  - format output propertly
-- add the following requests
-  - withdraw
-- add deposit
-- add withdraw
+- add deposit - no confirmation needed
+- add withdraw - request 
 - add import (include initial balance)
-- add error handling
 - add timeout to dialogs
 - replace web server for cb_server to waitress
 
 post MVP
+- add transfer request - request 
 - auth authentication to cb_server module
 - add language support
 
