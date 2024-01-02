@@ -1,3 +1,4 @@
+from typing import Callable
 import discord
 
 from cb_bot.cb_server_connection import CBServerConnection
@@ -20,11 +21,13 @@ class CommandHandler(InteractionHandler):
         # by defaul, all commands are allowed
         return True
 
-    def __init__(self, user_id, channel_id, server_connection: CBServerConnection, user_info_provider: UserInfoProvider):
+    def __init__(self, user_id, channel_id, server_connection: CBServerConnection, user_info_provider: UserInfoProvider, 
+            queue_interaction: Callable):
         self.user_id = user_id
         self.channel_id = channel_id
         self.server_connection = server_connection
         self.user_info_provider = user_info_provider
+        self.queue_interaction = queue_interaction
 
     # returns true if the command handling is completed
     async def handle_message(self, message: discord.Message) -> bool:

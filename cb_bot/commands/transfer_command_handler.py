@@ -4,6 +4,7 @@ import discord
 import re
 
 from cb_bot.cb_server_connection import CBServerException
+from cb_bot.common import get_printable_user_name
 from .command_handler import CommandHandler
 from .command_utils import CommandUtils
 class CommandStatus(Enum):
@@ -78,7 +79,7 @@ class TransferCommandHandler(CommandHandler):
         if not self.to:
             self.status = CommandStatus.COMPLETED
             return f'User \'{to_str}\' not found, please type one of the following users (or part of their name):\n' + \
-                f'{"\n".join([f"  {user.name}: {user.display_name}" for user in self.user_info_provider.get_all_users()])}'
+                f'{"\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()])}'
         
         # parse description
         if len(command_parts) > 4:
@@ -92,10 +93,7 @@ class TransferCommandHandler(CommandHandler):
             f"with description\n`{self.description}`\n" + \
             f"Please confirm by typing *yes* or *y*"
 
-    async def handle_confirmation(self, command_parts: List[str]) -> str:
-        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
-            return f"Invalid confirmation format, please type *yes* or *y*"
-        
+    async def confirmed(self) -> str:
         self.status = CommandStatus.COMPLETED
         # transfer the money
         try:
@@ -104,7 +102,11 @@ class TransferCommandHandler(CommandHandler):
             return f"Failed to transfer money: [{e.server_error.error_code}]{e.server_error.error_msg}"
         
         return 'Money transfered successfully'
-    
+
+    async def handle_confirmation(self, command_parts: List[str]) -> str:
+        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
+            return f"Invalid confirmation format, please type *yes* or *y*"
+        
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
         
@@ -115,7 +117,7 @@ class TransferCommandHandler(CommandHandler):
                 return True
             response = self.handle_full_command(command_parts)
         elif self.status == CommandStatus.PENDING_CONFIRMATION:
-            response = await self.handle_confirmation(command_parts)
+            response = await CommandUtils.handle_confirmation(command_parts, self.confirmed)
         else:
             raise Exception(f'Invalid status: {self.status}. This should not happen')
 

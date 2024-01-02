@@ -108,7 +108,8 @@ class UserInteractionManager:
         # There is no existing interaction for the user, try to create one
         for command_type in self.get_user_command_types(user_id):
             if command_type.matches(normalize_message(message.content)):
-                command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider)
+                # instantiate the command handler
+                command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider, self.queue_interaction)
                 self.user_interaction_provider.set_interaction(user_id, channel_id, command)
                 res = await command.handle_message(message)
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
@@ -125,4 +126,4 @@ class UserInteractionManager:
 
     def queue_interaction(self, user_id: str, interaction: InteractionHandler):
         user_info = self.user_info_provider.get_user_info(user_id)
-        self.user_interaction_provider.queue_request(user_id, user_info.dm_channel, interaction)
+        self.user_interaction_provider.queue_request(user_id, str(user_info.dm_channel.id), interaction)

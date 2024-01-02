@@ -21,7 +21,9 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre Trial
-- add withdraw - request 
+- add withdraw - request (under work)
+  - add a way to cancel 
+  - add the request source
 - add import (include initial balance)
 - add timeout to dialogs
 
@@ -32,7 +34,9 @@ pre MVP
 - replace web server for cb_server to waitress
 
 post MVP
+- execute commands one by one (request each part separately)
 - add transfer request - request 
 - auth authentication to cb_server module
 - add language support
+- add more friendly answers
 

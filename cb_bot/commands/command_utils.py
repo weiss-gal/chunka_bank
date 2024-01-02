@@ -1,6 +1,7 @@
-from typing import List
+from typing import Callable, List
 
 import tabulate
+from cb_bot.commands.command_exception import CommandParamException
 
 from cb_bot.common import get_user_printable_time
 from models.transactions import UserTransactionInfo
@@ -65,3 +66,26 @@ class CommandUtils:
             
         print(f'result size is {len(result)}')
         return result
+    
+    async def handle_confirmation(command_parts: List[str], confirmed: Callable) -> str:
+        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
+            return f"Invalid confirmation format, please type *yes* or *y*"
+
+        return await confirmed()
+    
+    def get_param_error_msg(e: CommandParamException, command_parts: List[str]) -> str:
+         # print the original command with '^' under the problematic part
+        element_offset = sum(len(part) for part in command_parts[:e.context]) + e.context
+        element_len = len(command_parts[e.context])
+        return f"```{' '.join(command_parts)}\n" + \
+            f"{' ' * element_offset}{'^' * element_len}```\n" + \
+            f"{str(e)}"
+        
+    def parse_amount(num_str: str, context) -> int:
+        try:
+            num = int(num_str)
+            if num <= 0:
+                raise CommandParamException('must be positive', context)
+            return num
+        except ValueError:
+            raise CommandParamException('invalid number', context)

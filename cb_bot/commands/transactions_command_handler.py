@@ -1,20 +1,12 @@
 from datetime import datetime
-from typing import List
+from typing import Callable, List
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
+from cb_bot.commands.command_exception import CommandFormatException, CommandParamException
 
 from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.user_info_provider import UserInfoProvider
 from .command_handler import CommandHandler
-
-class CommandFormatException(Exception):
-    pass
-
-class CommandParamException(Exception):
-    def __init__(self, msg: str, context=None):
-        super().__init__(msg)
-        self.context = context # any object that can be used to provide context for the error
-    pass
 
 class TransactionsCommandHandler(CommandHandler):
     """
@@ -39,8 +31,8 @@ class TransactionsCommandHandler(CommandHandler):
     def get_prefix() -> str:
         return TransactionsCommandHandler.PREFIX
     
-    def __init__(self, user_id, channel_id, server_connection: CBServerConnection, user_info_provider: UserInfoProvider):
-        super().__init__(user_id, channel_id, server_connection, user_info_provider)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.last_n = None
         self.from_date = None
         self.to_date = None
@@ -65,15 +57,6 @@ class TransactionsCommandHandler(CommandHandler):
         formats_example = f'{", ".join(set([datetime.strftime(datetime.now(), f) for f in formats]))}'
         raise CommandParamException('invalid date format, use one of the following formats: ' + formats_example, context)
 
-    async def parse_num(self, num_str: str, context) -> int:
-        try:
-            num = int(num_str)
-            if num <= 0:
-                raise CommandParamException('must be positive', context)
-            return num
-        except ValueError:
-            raise CommandParamException('invalid number', context)
-
     async def handle_full_command(self, message: discord.Message, command_parts: List[str], element_offset) -> bool:
         parts = [p for p in command_parts] # deep copy
         while len(parts) > 0:
@@ -81,7 +64,7 @@ class TransactionsCommandHandler(CommandHandler):
                 raise CommandFormatException()
             
             if parts[0] == 'last':
-                self.last_n = await self.parse_num(parts[1], element_offset+1)
+                self.last_n = await CommandUtils.parse_amount(parts[1], element_offset+1)
             elif parts[0] == 'from':
                 self.from_date = await self.parse_date(parts[1], element_offset+1)
             elif parts[0] == 'to':
@@ -114,12 +97,7 @@ class TransactionsCommandHandler(CommandHandler):
         except CommandFormatException as e:
             msg = f'Invalid command format, use:\n' + formats
         except CommandParamException as e:
-            # print the original command with '^' under the problematic part
-            element_offset = sum(len(part) for part in command_parts[:e.context]) + e.context
-            element_len = len(command_parts[e.context])
-            msg = f"```{' '.join(command_parts)}\n" + \
-                f"{' ' * element_offset}{'^' * element_len}```\n" + \
-                f"{str(e)}"
+            msg = CommandUtils.get_param_error_msg(e, command_parts)
                      
         for msg_part in CommandUtils.slice_message(msg):
             await message.channel.send(msg_part)

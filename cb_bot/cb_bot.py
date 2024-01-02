@@ -14,6 +14,7 @@ from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.commands.deposit_command_handler import DepositCommandHandler
 from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
 from cb_bot.commands.transfer_command_handler import TransferCommandHandler
+from cb_bot.commands.withdraw_command_handler import WithdrawCommandHandler
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
@@ -61,7 +62,8 @@ def main(args):
         BalanceCommandHandler,
         TransferCommandHandler, 
         TransactionsCommandHandler,
-        DepositCommandHandler
+        DepositCommandHandler,
+        WithdrawCommandHandler,
     ]
 
     intents = discord.Intents.default()
@@ -70,11 +72,6 @@ def main(args):
 
     user_mapper = UserMapper(config.mapper_path)
     cb_server_connection = CBServerConnection(config.cb_server_url, user_mapper)
-
-    def handle_quable_interaction(interaction):
-        
-        pass
-
 
     fast_tasks: List[callable] = [] # every second
     slow_tasks: List[callable] = [] # every 10 seconds
