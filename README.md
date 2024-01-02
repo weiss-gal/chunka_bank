@@ -26,11 +26,11 @@ pre Trial
   - add the request source
 - add import (include initial balance)
 - add timeout to dialogs
-
 - change time in transactions table to be user-friendly (there should
   already be a function for that)
 
 pre MVP
+- handle allowance
 - replace web server for cb_server to waitress
 
 post MVP
@@ -39,4 +39,5 @@ post MVP
 - auth authentication to cb_server module
 - add language support
 - add more friendly answers
+
 
