@@ -15,6 +15,7 @@ from cb_bot.commands.deposit_command_handler import DepositCommandHandler
 from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
 from cb_bot.commands.transfer_command_handler import TransferCommandHandler
 from cb_bot.commands.withdraw_command_handler import WithdrawCommandHandler
+from cb_bot.styling import Styling
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
 from cb_bot.user_info_provider import UserInfoProvider
@@ -109,9 +110,10 @@ def main(args):
         execute_slow_tasks.start()
         # print message on general channel
         general_channel = [channel for channel in client.get_all_channels() if channel.name == 'general'][0]
-        await general_channel.send(CommandUtils.highlight(f"**Bot __{client.user.display_name}__ is up and ready to work**\n" + 
-                                   "send me __hi__ in a private message to see the available commands", before=True))
-
+        wakeup_embed = discord.Embed(title=f"Bot __{client.user.display_name}__ is up and ready to work", 
+            url=None, description="Send me 'hi' in a private message to see the available commands", color=Styling.UP_COLOR)
+        await general_channel.send(embed=wakeup_embed)
+        
     @client.event
     async def on_message(message):
         # ignore message on anything but private channel
@@ -147,8 +149,9 @@ def main(args):
         print(f"Bot {client.user} is going to sleep")
         async def stop():
             if general_channel is not None:
-                await general_channel.send(CommandUtils.highlight(f"**Bot __{client.user.display_name}__ is going to sleep**\n" + 
-                                            "Bye bye.", before=False))
+                bye_bye_embed = discord.Embed(title=f"Bot __{client.user.display_name}__ is going to sleep", 
+                    url=None, description="Bye bye.", color=Styling.DOWN_COLOR)
+                await general_channel.send(embed=bye_bye_embed)
             await client.close()
         
         fast_tasks.append(stop)
