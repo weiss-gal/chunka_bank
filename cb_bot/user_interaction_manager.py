@@ -1,3 +1,4 @@
+import logging
 from typing import Type
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
@@ -93,14 +94,25 @@ class UserInteractionManager:
 
     def get_user_command_types(self, user_id: str) -> list[Type[CommandHandler]]:
         return [command_type for command_type in self.command_types if command_type.is_allowed(self.user_mapper.get_user_mapper_info(user_id))]
+    
+    async def _safe_send_message(self, interaction: InteractionHandler, message: discord.Message) -> bool:
+        res = None
+        try:
+            res = await interaction.handle_message(message)
+        except Exception as e:
+            res = True # cleanup the interaction
+            logging.error(f'Error occured while sending message {message} to channel {message.channel.id}: {e}')
+            await message.channel.send(f'An error occured: {e}')
 
+        return res
+    
     async def handle_message(self, message: discord.Message):
         user_id = str(message.author.id)
         channel_id = str(message.channel.id)
     
         interaction = self.user_interaction_provider.get_interaction(user_id, channel_id)        
         if interaction is not None:
-            res = await interaction.handle_message(message)
+            res = self._safe_send_message(interaction, message)
             if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
             return
@@ -111,8 +123,9 @@ class UserInteractionManager:
                 # instantiate the command handler
                 command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider, self.queue_interaction)
                 self.user_interaction_provider.set_interaction(user_id, channel_id, command)
-                res = await command.handle_message(message)
+                res = await self._safe_send_message(command, message)
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
+
                 return
             
         # No known command matches the message

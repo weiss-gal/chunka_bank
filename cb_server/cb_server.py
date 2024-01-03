@@ -109,7 +109,7 @@ def get_user_transactions(username):
         transactions_list.append(UserTransactionInfo(
             userid=username,
             amount=t[1],
-            time=datetime.fromtimestamp(t[0], timezone.utc).isoformat(),
+            timestamp=datetime.fromtimestamp(t[0], timezone.utc).isoformat(),
             description=t[2],
             id=t[3]
         ))

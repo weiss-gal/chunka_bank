@@ -32,7 +32,6 @@ class CommandUtils:
             ] for t in transactions
         ]
 
-
         return '\n'.join([f"`{line}`" for line in tabulate.tabulate(table, headers=headers, tablefmt='plain').split('\n')])
 
     MAX_DISCORD_MESSAGE_LEN = 2000

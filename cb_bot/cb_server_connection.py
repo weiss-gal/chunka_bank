@@ -63,7 +63,7 @@ class CBServerConnection:
         return UserTransactionInfo(
             userid=user_id,
             id=transaction['id'],
-            timestamp=datetime.fromisoformat(transaction['time']).timestamp(),
+            timestamp=datetime.fromisoformat(transaction['timestamp']).timestamp(),
             amount=transaction['amount'],
             description=transaction['description'])
 

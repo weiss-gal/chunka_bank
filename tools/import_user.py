@@ -4,6 +4,8 @@ import datetime
 import os
 from typing import Dict, List
 
+from cb_server.cb_repo import Repo
+
 
 class Transaction():
 
@@ -71,13 +73,13 @@ class CSVMapper():
             
         print ([ord(c) for c in "פעולה"])
 
-Configuration = namedtuple('Configuration', ['balance', 'username', 'database_path', 'csv_file_path'])
+Configuration = namedtuple('Configuration', ['balance', 'username', 'database_path', 'csv_file_path', 'is_create'])
 
 def parse_command_line_args():
     import argparse
 
     parser = argparse.ArgumentParser(description='Import new user from a CSV file')
-    parser.add_argument('-b', '--adjust_balance', type=int, help='Adjust balance', required=False)
+    parser.add_argument('-b', '--adjust_balance', type=float, help='Adjust balance', required=False)
     parser.add_argument('-c', '--create', action='store_true', help='Create a new database', required=False)
     parser.add_argument('username', type=str, help='Username to be used in the database')
     parser.add_argument('database_path', type=str, help='Path to the database')
@@ -87,7 +89,7 @@ def parse_command_line_args():
     
     return Configuration(balance=parsing_result.adjust_balance, 
         username=parsing_result.username, database_path=parsing_result.database_path, 
-        csv_file_path=parsing_result.csv_file_path)
+        csv_file_path=parsing_result.csv_file_path, is_create=parsing_result.create)
 
 def read_csv_file(path: str) -> List[List[str]]:
     # check if file exists and is readable
@@ -130,20 +132,36 @@ def main(config: Configuration):
             return
 
     for t in transactions:
-        print(t)
+        print(t) # XXX debug
 
     # add user to database
     balance = config.balance if config.balance is not None else sum([t.amount for t in transactions])
     print(f'Adding user {config.username} with balance {balance}')
 
+    is_save_confirmation = False
+    while not is_save_confirmation:
+        confirmation = input(f'Are you sure you import user {config.username} to database? (y/n) ')
+        if confirmation == 'y':
+            is_save_confirmation = True
+        elif confirmation == 'n':
+            return
+    
+    # add user to database
+    print('Adding user to database')
+
+    if config.is_create and os.path.isfile(config.database_path):
+        print(f"Database file already exists at '{config.database_path}'")
+        exit(-1)
+    if not config.is_create and not os.path.isfile(config.database_path):
+        print(f"No database file found at {config.database_path}, to create new one re-run the import too with the '--create' flag")
+        exit(-1)
+
+    db_repo = Repo(config.database_path, create=config.is_create)
+    # add user
+    db_repo.add_user(config.username, balance)
     # add transactions to database
-
-
-
-
-
-
-
+    for t in transactions:
+        db_repo.force_add_transaction(config.username, t.get_amount(), t.date.timestamp(), t.description)
 
 if __name__ == '__main__':
     main(parse_command_line_args())

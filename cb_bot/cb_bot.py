@@ -126,19 +126,12 @@ def main(args):
         user = message.author
         # this is the channel of there the message is sent
         channel = message.channel
-        logging.info(f"Message recieved: {content}, User: {user}, Channel: {channel}")
         # if the user is the client user itself, ignore the message
         if user == client.user:
             return
         
-        try:
-            await user_interaction_manager.handle_message(message)
-        except Exception as e:
-            if config.is_debug:
-                raise e
-            
-            await channel.send(f"Internal error: {e}")
-
+        logging.info(f"Message recieved: {content}, User: {user}, Channel: {channel}")
+        await user_interaction_manager.handle_message(message)
     is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
     def terminanation_handler(sig, frame):
         nonlocal is_stopped
