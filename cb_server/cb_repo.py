@@ -76,6 +76,16 @@ class Repo:
 
         return True, None
     
+    def force_add_transaction(self, userid: str, value: float, timestamp: int, description: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
+            VALUES (?, ?, ?, ?, ?)''', (userid, value, timestamp, description, str(uuid.uuid4()))) 
+        conn.commit()
+        conn.close()
+
+        return True, None
+    
     def transfer_money(self, from_userid: str, to_userid: str, value: float, description: str):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()

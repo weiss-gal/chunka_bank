@@ -9,7 +9,7 @@ class Transaction():
 
     DATE_FORMATS = ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d', '%d.%m.%Y', '%d.%m.%y', '%d %b %Y', '%d %b %y']
 
-    def parse_date(self, date: str) -> datetime:
+    def _parse_date(self, date: str) -> datetime:
         "Parse a date string into a datetime object as datetime object" 
         for format in Transaction.DATE_FORMATS:
             try:
@@ -20,17 +20,20 @@ class Transaction():
         raise Exception(f'Could not parse date {date}')
     
 
-    def parse_amount(self, amount: str) -> float:
+    def _parse_amount(self, amount: str) -> float:
         "Parse an amount string into a float"
         return float(amount.strip())
 
     def __init__(self, date: str, amount: str, description: str) -> None:
-        self.date: datetime.datetime = self.parse_date(date)
-        self.amount = amount
+        self.date: datetime.datetime = self._parse_date(date)
+        self.amount = self._parse_amount(amount)
         self.description = description
 
     def __repr__(self) -> str:
         return f'Transaction({self.date}, {self.amount}, {self.description})'
+    
+    def get_amount(self) -> float:
+        return self.amount
 
 class CSVMapper():
     def __init__(self) -> None:
@@ -128,7 +131,10 @@ def main(config: Configuration):
 
     for t in transactions:
         print(t)
+
     # add user to database
+    balance = config.balance if config.balance is not None else sum([t.amount for t in transactions])
+    print(f'Adding user {config.username} with balance {balance}')
 
     # add transactions to database
 
