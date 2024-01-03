@@ -26,6 +26,7 @@ pre Trial
   - add the request source
 - add import (under work)
   - include initial balance
+  - include weekly allowance
 - add timeout to dialogs
 - change time in transactions table to be user-friendly (there should
   already be a function for that)
