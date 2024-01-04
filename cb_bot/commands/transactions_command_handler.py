@@ -98,7 +98,9 @@ class TransactionsCommandHandler(CommandHandler):
             msg = f'Invalid command format, use:\n' + formats
         except CommandParamException as e:
             msg = CommandUtils.get_param_error_msg(e, command_parts)
-                     
-        for msg_part in CommandUtils.slice_message(msg):
+
+        # this prefix is required to force discord to show the message as an ltr one
+        ltr_prefix = '`...more...`'                      
+        for msg_part in CommandUtils.slice_message(msg, prefix=ltr_prefix):
             await message.channel.send(msg_part)
         return True

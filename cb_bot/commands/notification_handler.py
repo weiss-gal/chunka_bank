@@ -9,7 +9,8 @@ class NotificationHandler(RequestHandler):
 
     async def initiate_interaction(self, channel: discord.channel) -> bool:
         print(f"sending notification to user id {self.user_id}:  {self.message}")
-        for msg_part in CommandUtils.slice_message(self.message):
+        ltr_prefix = '`...more...`'
+        for msg_part in CommandUtils.slice_message(self.message, prefix=ltr_prefix):
             await channel.send(msg_part)
 
         return True

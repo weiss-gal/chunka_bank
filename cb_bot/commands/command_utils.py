@@ -36,32 +36,38 @@ class CommandUtils:
 
     MAX_DISCORD_MESSAGE_LEN = 2000
 
-    def slice_message(message: str, max_len: int = MAX_DISCORD_MESSAGE_LEN) -> List[str]:
+    def slice_message(message: str, prefix: str = None, max_len: int = MAX_DISCORD_MESSAGE_LEN) -> List[str]:
         """Slice a message into multiple messages, each with max_len characters"""
         if len(message) <= max_len:
             return [message]
 
         result = []
-        msg_parts = message.split('\n')
-       
-        while len(msg_parts) > 0:
-            last_index = len(msg_parts) 
-            msg_size = 0
-            for i in range(len(msg_parts)):
-                if msg_size + len(msg_parts[i]) > max_len:
+        msg_lines = message.split('\n')
+        is_first = True
+        while len(msg_lines) > 0:
+            last_index = len(msg_lines) 
+            msg_size = 0 if prefix is None and not is_first else len(prefix) + 1 # +1 for the '\n'
+            for i in range(len(msg_lines)):
+                if msg_size + len(msg_lines[i]) > max_len:
                     last_index = i 
                     break
-                msg_size += len(msg_parts[i]) + 1 # +1 for the '\n'
+                msg_size += len(msg_lines[i]) + 1 # +1 for the '\n'
 
             if last_index == 0:
                 raise Exception(f'Cannot slice message: {message}')
             
             print(f'appending {last_index} lines')
-            result.append('\n'.join(msg_parts[:last_index]))
-            if last_index == len(msg_parts):
+
+            msg_part = msg_lines[:last_index]
+            if not is_first and prefix is not None:
+                msg_part.insert(0, prefix)
+
+            result.append('\n'.join(msg_part))
+            if last_index == len(msg_lines):
                 break
             
-            msg_parts = msg_parts[last_index:]
+            msg_lines = msg_lines[last_index:]
+            is_first = False
             
         print(f'result size is {len(result)}')
         return result
