@@ -2,8 +2,8 @@ from datetime import datetime
 
 from cb_bot.user_info_provider import ExternalUserInfo
 
-def normalize_message(message):
-    return message.strip().lower()
+def normalize_message(message_content: str):
+    return message_content.strip().lower()
 
 def get_user_printable_time(timestamp: int):
     return datetime.fromtimestamp(timestamp).strftime('%d/%m/%Y %H:%M:%S')

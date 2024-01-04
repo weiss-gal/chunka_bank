@@ -72,10 +72,13 @@ class CommandUtils:
         print(f'result size is {len(result)}')
         return result
     
-    async def handle_confirmation(command_parts: List[str], confirmed: Callable) -> str:
-        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
-            return f"Invalid confirmation format, please type *yes* or *y*"
+    async def handle_confirmation(command_parts: List[str], cancelled: Callable, confirmed: Callable) -> str:
+        FORMAT = "please confirm by typing *yes* or cancel by typing *no*"
+        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y', 'no', 'n']:
+            return f"I did not understand, {FORMAT}"
 
+        if command_parts[0].lower() in ['no', 'n']:
+            return await cancelled()
         return await confirmed()
     
     def get_param_error_msg(e: CommandParamException, command_parts: List[str]) -> str:

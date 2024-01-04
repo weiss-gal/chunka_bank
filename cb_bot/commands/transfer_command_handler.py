@@ -102,10 +102,10 @@ class TransferCommandHandler(CommandHandler):
             return f"Failed to transfer money: [{e.server_error.error_code}]{e.server_error.error_msg}"
         
         return 'Money transfered successfully'
-
-    async def handle_confirmation(self, command_parts: List[str]) -> str:
-        if len(command_parts) != 1 or command_parts[0].lower() not in ['yes', 'y']:
-            return f"Invalid confirmation format, please type *yes* or *y*"
+    
+    async def cancelled(self) -> str:
+        self.status = CommandStatus.COMPLETED
+        return 'Transfer cancelled'
         
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
@@ -117,7 +117,7 @@ class TransferCommandHandler(CommandHandler):
                 return True
             response = self.handle_full_command(command_parts)
         elif self.status == CommandStatus.PENDING_CONFIRMATION:
-            response = await CommandUtils.handle_confirmation(command_parts, self.confirmed)
+            response = await CommandUtils.handle_confirmation(command_parts, self.cancelled, self.confirmed)
         else:
             raise Exception(f'Invalid status: {self.status}. This should not happen')
 

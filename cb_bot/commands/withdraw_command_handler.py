@@ -40,7 +40,15 @@ class WithdrawCommandHandler(CommandHandler):
         self.request_from = None 
 
     '''this function is called after the other party confirmed the request'''   
-    async def other_party_confirmed(self) -> str:
+    async def other_party_completed(self, is_confirmed: bool) -> str:
+        if not is_confirmed:
+            notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from))} " + \
+            f"has rejected your withdraw request of {self.amount}"
+            approval_notification = NotificationHandler(self.user_id, notification)
+            self.queue_interaction(self.user_id, approval_notification)
+
+            return f"Request cancelled"
+        
         # notify the user that the request has been approved
         notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from))} " + \
             f"has approved your withdraw request of {self.amount}"
@@ -59,9 +67,13 @@ class WithdrawCommandHandler(CommandHandler):
         self.status = CommandStatus.COMPLETED
      
         self.queue_interaction(self.request_from, WithdrawalRequestHandler(self.user_id, self.amount, 
-            self.request_from, self.description, self.user_info_provider, self.other_party_confirmed))
+            self.request_from, self.description, self.user_info_provider, self.other_party_completed))
         from_user_info = self.user_info_provider.get_user_info(self.request_from)
         return f"Withdraw request has been sent to {get_printable_user_name(from_user_info)} for approval, you will be notified when it is approved"
+    
+    async def cancelled(self) -> str:
+        self.status = CommandStatus.COMPLETED
+        return f"Request cancelled"
 
     def get_default_description(self) -> str:
         return f"Withdraw {self.amount} by {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from), False)}"
@@ -112,7 +124,7 @@ class WithdrawCommandHandler(CommandHandler):
                 response = CommandUtils.get_param_error_msg(e, command_parts)
                 
         elif self.status == CommandStatus.PENDING_CONFIRMATION:
-            response = await CommandUtils.handle_confirmation(command_parts, self.confirmed)
+            response = await CommandUtils.handle_confirmation(command_parts, self.cancelled, self.confirmed)
 
         await message.channel.send(response)
         return self.status == CommandStatus.COMPLETED
