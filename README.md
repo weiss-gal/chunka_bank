@@ -24,8 +24,6 @@ pre Trial
 - add withdraw - request (under work)
   - add a way to cancel 
 - add timeout to dialogs
-- change time in transactions table to be user-friendly (there should
-  already be a function for that)
 
 pre MVP
 - handle allowance
