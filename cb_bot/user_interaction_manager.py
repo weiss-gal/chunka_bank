@@ -112,7 +112,7 @@ class UserInteractionManager:
     
         interaction = self.user_interaction_provider.get_interaction(user_id, channel_id)        
         if interaction is not None:
-            res = self._safe_send_message(interaction, message)
+            res = await self._safe_send_message(interaction, message)
             if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
             return

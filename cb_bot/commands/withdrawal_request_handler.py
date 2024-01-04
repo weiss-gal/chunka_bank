@@ -4,7 +4,8 @@ from typing import Callable
 import discord
 
 from cb_bot.commands.request_handler import RequestHandler
-from cb_bot.common import normalize_message
+from cb_bot.common import get_printable_user_name, normalize_message
+from cb_bot.user_info_provider import UserInfoProvider
 
 
 class RequestStatus(Enum):
@@ -17,18 +18,20 @@ class WithdrawalRequestHandler(RequestHandler):
     the user_id is the user to withdraw from
     the to_user_id is the user to transfer the money to
     '''
-
     CONFIRM_MSG = "Please confirm by typing **confirm**"
 
-    def __init__(self, user_id: str, amount: float, to_user_id: str, description: str, complete:Callable):
+    def __init__(self, user_id: str, amount: float, to_user_id: str, description: str, user_info_provider: UserInfoProvider, 
+                 complete:Callable):
         super().__init__(user_id)
         self.amount = amount
         self.to_user_id = to_user_id
         self.description = description
+        self.user_info_provider = user_info_provider
         self.complete = complete
 
     async def initiate_interaction(self, channel: discord.channel) -> bool:
-        await channel.send(f"You are about to withdraw **{self.amount}** with the following description:\n" + \
+        to_user_info = self.user_info_provider.get_user_info(self.to_user_id)
+        await channel.send(f"The user {get_printable_user_name(to_user_info)} is asking you  to withdraw **{self.amount}** from your account. with the following description:\n" + \
             f"`{self.description}`\n" + \
             WithdrawalRequestHandler.CONFIRM_MSG)
         return False

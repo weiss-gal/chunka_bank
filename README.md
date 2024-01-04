@@ -23,7 +23,6 @@ python -m cb_bot.cb_bot
 pre Trial
 - add withdraw - request (under work)
   - add a way to cancel 
-  - add the request source
 - add timeout to dialogs
 - change time in transactions table to be user-friendly (there should
   already be a function for that)

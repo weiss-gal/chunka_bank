@@ -1,14 +1,14 @@
 import re
-from typing import Any, Callable, Coroutine, List
-from discord import Enum, Message
+from typing import List
+from discord import Enum
 import discord
-from cb_bot.cb_server_connection import CBServerConnection, CBServerException
+from cb_bot.cb_server_connection import CBServerException
 from cb_bot.cb_user_mapper import UserMappingInfo
 from cb_bot.commands.command_exception import CommandFormatException, CommandParamException
 from cb_bot.commands.command_handler import CommandHandler
 from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.commands.notification_handler import NotificationHandler
-from cb_bot.commands.request_handler import WithdrawalRequestHandler
+from cb_bot.commands.withdrawal_request_handler import WithdrawalRequestHandler
 from cb_bot.common import get_printable_user_name
 from cb_bot.user_info_provider import UserInfoProvider
 
@@ -57,8 +57,9 @@ class WithdrawCommandHandler(CommandHandler):
 
     async def confirmed(self) -> str:
         self.status = CommandStatus.COMPLETED
-        # TODO: send request to other user
-        self.queue_interaction(self.request_from, WithdrawalRequestHandler(self.user_id, self.amount, self.request_from, self.description, self.other_party_confirmed))
+     
+        self.queue_interaction(self.request_from, WithdrawalRequestHandler(self.user_id, self.amount, 
+            self.request_from, self.description, self.user_info_provider, self.other_party_confirmed))
         from_user_info = self.user_info_provider.get_user_info(self.request_from)
         return f"Withdraw request has been sent to {get_printable_user_name(from_user_info)} for approval, you will be notified when it is approved"
 
