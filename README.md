@@ -24,7 +24,6 @@ pre Trial
 - add withdraw - request (under work)
   - add a way to cancel 
   - add the request source
-- fix ltr in long message that includes hebrew
 - add timeout to dialogs
 - change time in transactions table to be user-friendly (there should
   already be a function for that)
