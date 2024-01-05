@@ -21,9 +21,6 @@ python -m cb_bot.cb_bot
 
 ## TODO
 pre Trial
-- add withdraw - request (under work)
-  - add a way to cancel 
-- add timeout to dialogs
 
 pre MVP
 - handle allowance

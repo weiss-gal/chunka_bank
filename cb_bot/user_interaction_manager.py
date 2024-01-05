@@ -75,6 +75,16 @@ class UserInteractionManager:
                 res = await request.initiate_interaction(self.user_info_provider.get_user_info(user_id).dm_channel)
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
+    async def cleanup_interactions(self) -> None:
+        for user_id in self.user_interaction_provider.get_all_users():
+            for channel_id in self.user_interaction_provider.get_all_channels(user_id):
+                interaction =  self.user_interaction_provider.get_interaction(user_id, channel_id)
+                if interaction is None:
+                    continue
+
+                res = await interaction.check_expired()
+                if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
+
     def __init__(self, command_types: list[Type[CommandHandler]], cb_server_connection: CBServerConnection, 
                  user_info_provider: UserInfoProvider, user_mapper: UserMapper, register_fast_task: callable):
         
@@ -91,11 +101,12 @@ class UserInteractionManager:
         self.users: dict[str, dict[str, UserChannelState]] = {}
 
         register_fast_task(self.process_queued_interactions)
+        register_fast_task(self.cleanup_interactions)
 
     def get_user_command_types(self, user_id: str) -> list[Type[CommandHandler]]:
         return [command_type for command_type in self.command_types if command_type.is_allowed(self.user_mapper.get_user_mapper_info(user_id))]
     
-    async def _safe_send_message(self, interaction: InteractionHandler, message: discord.Message) -> bool:
+    async def _safe_handle_message(self, interaction: InteractionHandler, message: discord.Message) -> bool:
         res = None
         try:
             res = await interaction.handle_message(message)
@@ -112,7 +123,7 @@ class UserInteractionManager:
     
         interaction = self.user_interaction_provider.get_interaction(user_id, channel_id)        
         if interaction is not None:
-            res = await self._safe_send_message(interaction, message)
+            res = await self._safe_handle_message(interaction, message)
             if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
             return
@@ -123,7 +134,7 @@ class UserInteractionManager:
                 # instantiate the command handler
                 command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider, self.queue_interaction)
                 self.user_interaction_provider.set_interaction(user_id, channel_id, command)
-                res = await self._safe_send_message(command, message)
+                res = await self._safe_handle_message(command, message)
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
                 return

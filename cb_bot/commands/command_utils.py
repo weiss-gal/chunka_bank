@@ -97,3 +97,6 @@ class CommandUtils:
             return num
         except ValueError:
             raise CommandParamException('invalid number', context)
+
+    def get_expired_msg() -> str:
+        return '**Sorry**, I think you forgot about me, please start over'

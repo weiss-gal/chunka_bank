@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import List
 import discord
@@ -27,6 +28,8 @@ class TransferCommandHandler(CommandHandler):
         self.amount = None
         self.to = None
         self.description = None
+        self.channel: discord.channel = None
+        self.last_activity: datetime = None
 
     def matches(message: str) -> bool:
         return CommandUtils.split_message(message)[0] == TransferCommandHandler.PHRASE
@@ -108,6 +111,8 @@ class TransferCommandHandler(CommandHandler):
         return 'Transfer cancelled'
         
     async def handle_message(self, message: discord.Message) -> bool:
+        self.last_activity = datetime.now()
+        self.channel = message.channel
         command_parts = CommandUtils.split_message(message.content)
         
         response = None
@@ -124,3 +129,11 @@ class TransferCommandHandler(CommandHandler):
         if response: await message.channel.send(response)
         return self.status == CommandStatus.COMPLETED
 
+    async def check_expired(self) -> bool:        
+        if self.status == CommandStatus.PENDING_CONFIRMATION and \
+            (datetime.now() - self.last_activity).total_seconds() > type(self).TIMEOUT_S:
+            await self.channel.send(CommandUtils.get_expired_msg())
+            return True
+        
+        return False
+        

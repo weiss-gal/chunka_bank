@@ -14,3 +14,6 @@ class BalanceCommandHandler(CommandHandler):
         balance = await self.server_connection.get_user_balance(self.user_id)
         await message.channel.send(f'Your balance is **{balance}**')
         return True
+    
+    async def check_expired(self) -> bool:
+        return False # never expires

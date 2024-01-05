@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 from typing import List
 from discord import Enum
@@ -37,7 +38,9 @@ class WithdrawCommandHandler(CommandHandler):
         super().__init__(*args, **kwargs)
         self.status = CommandStatus.START
         self.amount = None
-        self.request_from = None 
+        self.request_from = None
+        self.channel: discord.channel = None
+        self.last_activity: datetime = None
 
     '''this function is called after the other party confirmed the request'''   
     async def other_party_completed(self, is_confirmed: bool) -> str:
@@ -106,6 +109,8 @@ class WithdrawCommandHandler(CommandHandler):
             f"Please confirm by typing *yes* or *y*"
 
     async def handle_message(self, message: discord.Message) -> bool:
+        self.channel = message.channel
+        self.last_activity = datetime.now()
         format = f'`{WithdrawCommandHandler.PREFIX} <amount> from <username> [description]`'
         command_parts = CommandUtils.split_message(message.content)
 
@@ -128,6 +133,14 @@ class WithdrawCommandHandler(CommandHandler):
 
         await message.channel.send(response)
         return self.status == CommandStatus.COMPLETED
+
+    async def check_expired(self) -> bool:
+        if self.status == CommandStatus.PENDING_CONFIRMATION and \
+            (datetime.now() - self.last_activity).total_seconds() > type(self).TIMEOUT_S:
+            await self.channel.send(CommandUtils.get_expired_msg())
+            return True
+        
+        return False
 
     def is_allowed(user_mapping_info: UserMappingInfo) -> bool:
         return user_mapping_info.is_admin

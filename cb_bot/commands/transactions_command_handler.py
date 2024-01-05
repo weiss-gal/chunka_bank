@@ -104,3 +104,7 @@ class TransactionsCommandHandler(CommandHandler):
         for msg_part in CommandUtils.slice_message(msg, prefix=ltr_prefix):
             await message.channel.send(msg_part)
         return True
+    
+    async def check_expired(self) -> bool:
+        return False # stateless command never expires
+
