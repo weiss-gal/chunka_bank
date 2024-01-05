@@ -13,7 +13,7 @@ class CBServerException(Exception):
 
 class CBServerNoUserException(CBServerException):
     def __init__(self, user_id: str):
-        super().__init__(self, ServerError(error_code=ErrorCodes.INTERNAL_ERROR, error_msg=f"User '{user_id}' not found on CB server"))
+        super().__init__(ServerError(error_code=ErrorCodes.INTERNAL_ERROR, error_msg=f"User '{user_id}' not found on CB server"))
 
 class CBServerConnection:
     """Represents a connection to the CB backend server"""

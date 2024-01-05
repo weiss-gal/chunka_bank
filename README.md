@@ -33,5 +33,7 @@ post MVP
 - auth authentication to cb_server module
 - add language support
 - add more friendly answers
+- add admin commands
+- gracefull shutdown (check logs, close existing dialogs propertly)
 
 
