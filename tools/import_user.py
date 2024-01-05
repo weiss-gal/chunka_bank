@@ -6,7 +6,6 @@ from typing import Dict, List
 
 from cb_server.cb_repo import Repo
 
-
 class Transaction():
 
     DATE_FORMATS = ['%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d', '%d.%m.%Y', '%d.%m.%y', '%d %b %Y', '%d %b %y']
@@ -148,7 +147,6 @@ def main(config: Configuration):
     
     # add user to database
     print('Adding user to database')
-
     if config.is_create and os.path.isfile(config.database_path):
         print(f"Database file already exists at '{config.database_path}'")
         exit(-1)

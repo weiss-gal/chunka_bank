@@ -20,3 +20,4 @@ class NotificationHandler(RequestHandler):
     
     async def check_expired(self) -> bool:
         return False # never expires
+

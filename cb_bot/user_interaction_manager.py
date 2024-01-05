@@ -78,7 +78,7 @@ class UserInteractionManager:
     async def cleanup_interactions(self) -> None:
         for user_id in self.user_interaction_provider.get_all_users():
             for channel_id in self.user_interaction_provider.get_all_channels(user_id):
-                interaction =  self.user_interaction_provider.get_interaction(user_id, channel_id)
+                interaction = self.user_interaction_provider.get_interaction(user_id, channel_id)
                 if interaction is None:
                     continue
 
