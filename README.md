@@ -23,10 +23,13 @@ python -m cb_bot.cb_bot
 pre Trial
 
 pre MVP
+- add backup
+- in request deposit, the notification to the user is showing the wrong requesting user
 - handle allowance
 - replace web server for cb_server to waitress
 
 post MVP
+- add timed request for users 
 - consider using the new bot ui feature (https://discordpy.readthedocs.io/en/stable/interactions/api.html#view)
 - execute commands one by one (request each part separately)
 - add transfer request - request 
