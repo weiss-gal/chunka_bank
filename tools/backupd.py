@@ -56,21 +56,27 @@ def validate_env(c: Configuration):
     elif not os.path.isdir(c.log_path):
         raise Exception(f"log path '{c.log_path}' is not a directory")
 
-def get_next_backup_time(c: Configuration):
+def get_all_backup_files(c: Configuration):
     # get all the backup files
-    print("backup path is ", c.backup_path) # XXX - debug
     backup_files = [fname for fname in os.listdir(c.backup_path) if BACKUP_FILE_RE.match(fname)]
     backup_files.sort()
-    print("backup files are ", backup_files) # XXX - debug
+    return backup_files
+
+def get_time_from_backup_file_name(fname: str):
+    # parse the backup file name
+    m = BACKUP_FILE_RE.match(fname)
+    return datetime(int(m.group(1)[0:4]), int(m.group(1)[4:6]), int(m.group(1)[6:8]), 
+                    int(m.group(2)[0:2]), int(m.group(2)[2:4]), int(m.group(2)[4:6]))
+
+def get_next_backup_time(c: Configuration):
+    # get all the backup files
+    backup_files = get_all_backup_files(c)
     if len(backup_files) == 0:
         # no backup files found, return now
         return datetime.now() - timedelta(seconds=1)
     
     # parse the last backup file name
-    m = BACKUP_FILE_RE.match(backup_files[-1])
-    last_backup_time = datetime(int(m.group(1)[0:4]), int(m.group(1)[4:6]), int(m.group(1)[6:8]), 
-                    int(m.group(2)[0:2]), int(m.group(2)[2:4]), int(m.group(2)[4:6]))
-    
+    last_backup_time = get_time_from_backup_file_name(backup_files[-1])  
     return last_backup_time + timedelta(seconds=c.backup_interval_s)
 
 def dump_db(c: Configuration) -> str:
@@ -103,14 +109,49 @@ def main():
     print(f"Next backup time is {next_backup_time}") # XXX - debug
     while True:
         now = datetime.now()
-        if now > next_backup_time:
-            print("Creating backup") # XXX - debug
-            create_backup(configuration)
-            next_backup_time += timedelta(seconds=configuration.backup_interval_s)
+        if now < next_backup_time:
+            # not yet time to backup
+            time.sleep(60)
+            continue
 
-            # todo - delete old backup files
+        create_backup(configuration)
+        next_backup_time += timedelta(seconds=configuration.backup_interval_s)
+
+        # The cleanup logic is simple:
+        # 1. if there are no more than 20 backup files, do nothing
+        # 2. for backups from the 24 hours, keep 1 backup per hour (do nothing)
+        # 3. for backups from the last week, keep 1 backup per day
+        # 4. for backups from the last month, keep 1 backup per week
+        all_backup_files = [(fname, get_time_from_backup_file_name(fname)) for fname in get_all_backup_files(configuration)]
         
-        time.sleep(60)
+        if len(all_backup_files) <= 20:
+            continue
+        
+        # purge older than 1 month backups
+        week_end = now - timedelta(days=30)
+        while True:
+            week_files = [fname for fname, time in all_backup_files if time < week_end and time >= week_end - timedelta(weeks=1)]
+            if len(week_files) == 0:
+                break
+
+            # delete all but the last one
+            for fname in week_files[:-1]:
+                print("Purging backup file", fname)
+                os.remove(os.path.join(configuration.backup_path, fname))
+            
+            week_end -= timedelta(weeks=1)
+
+        # purge last week backups (except the last day)
+        for day in range(1, 8):
+            day_end = now - timedelta(days=day)
+            day_files = [fname for fname, time in all_backup_files if time < day_end and time >= day_end - timedelta(days=1)]
+            if len(day_files) == 0:
+                continue
+
+            # delete all but the last one
+            for fname in day_files[:-1]:
+                print("Purging backup file", fname)
+                os.remove(os.path.join(configuration.backup_path, fname))
 
 if __name__ == '__main__':
     main()
