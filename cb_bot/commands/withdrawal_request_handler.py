@@ -22,11 +22,11 @@ class WithdrawalRequestHandler(RequestHandler):
     '''
     CONFIRM_MSG = "Please confirm by typing **yes** or **y**"
 
-    def __init__(self, user_id: str, amount: float, to_user_id: str, description: str, user_info_provider: UserInfoProvider, 
+    def __init__(self, user_id: str, amount: float, requesting_user_id: str, description: str, user_info_provider: UserInfoProvider, 
                  on_complete: Callable):
         super().__init__(user_id)
         self.amount = amount
-        self.to_user_id = to_user_id
+        self.requesting_user_id = requesting_user_id
         self.description = description
         self.user_info_provider = user_info_provider
         self.on_complete = on_complete
@@ -39,8 +39,8 @@ class WithdrawalRequestHandler(RequestHandler):
     async def initiate_interaction(self, channel: discord.channel) -> bool:
         self.channel = channel
         self.last_activity = datetime.now()
-        to_user_info = self.user_info_provider.get_user_info(self.to_user_id)
-        await channel.send(f"The user {get_printable_user_name(to_user_info)} is asking you  to withdraw **{self.amount}** from your account. with the following description:\n" + \
+        requesting_user_info = self.user_info_provider.get_user_info(self.requesting_user_id)
+        await channel.send(f"The user {get_printable_user_name(requesting_user_info)} is asking you  to withdraw **{self.amount}** from your account. with the following description:\n" + \
             f"`{self.description}`\n" + \
             WithdrawalRequestHandler.CONFIRM_MSG)
         return False
