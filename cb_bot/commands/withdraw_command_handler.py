@@ -38,14 +38,14 @@ class WithdrawCommandHandler(CommandHandler):
         super().__init__(*args, **kwargs)
         self.status = CommandStatus.START
         self.amount = None
-        self.request_from = None
+        self.requested_user_id = None
         self.channel: discord.channel = None
         self.last_activity: datetime = None
 
     '''this function is called after the other party confirmed the request'''   
     async def other_party_completed(self, is_confirmed: bool) -> str:
         if not is_confirmed:
-            notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from))} " + \
+            notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.requested_user_id))} " + \
             f"has rejected your withdraw request of {self.amount}"
             approval_notification = NotificationHandler(self.user_id, notification)
             self.queue_interaction(self.user_id, approval_notification)
@@ -53,14 +53,14 @@ class WithdrawCommandHandler(CommandHandler):
             return f"Request cancelled"
         
         # notify the user that the request has been approved
-        notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from))} " + \
+        notification = f"The user {get_printable_user_name(self.user_info_provider.get_user_info(self.requested_user_id))} " + \
             f"has approved your withdraw request of {self.amount}"
         approval_notification = NotificationHandler(self.user_id, notification)
         self.queue_interaction(self.user_id, approval_notification)
 
         # send request to server
         try:
-            await self.server_connection.do_money_transfer(self.request_from, self.user_id, self.amount, self.description)
+            await self.server_connection.do_money_transfer(self.requested_user_id, self.user_id, self.amount, self.description)
         except CBServerException as e:
              return f"Failed to withdraw money: [{e.server_error.error_code}]{e.server_error.error_msg}"
         
@@ -69,9 +69,9 @@ class WithdrawCommandHandler(CommandHandler):
     async def confirmed(self) -> str:
         self.status = CommandStatus.COMPLETED
      
-        self.queue_interaction(self.request_from, WithdrawalRequestHandler(self.user_id, self.amount, 
-            self.request_from, self.description, self.user_info_provider, self.other_party_completed))
-        from_user_info = self.user_info_provider.get_user_info(self.request_from)
+        self.queue_interaction(self.requested_user_id, WithdrawalRequestHandler(self.requested_user_id, self.amount, 
+            self.user_id, self.description, self.user_info_provider, self.other_party_completed))
+        from_user_info = self.user_info_provider.get_user_info(self.requested_user_id)
         return f"Withdraw request has been sent to {get_printable_user_name(from_user_info)} for approval, you will be notified when it is approved"
     
     async def cancelled(self) -> str:
@@ -79,7 +79,7 @@ class WithdrawCommandHandler(CommandHandler):
         return f"Request cancelled"
 
     def get_default_description(self) -> str:
-        return f"Withdraw {self.amount} by {get_printable_user_name(self.user_info_provider.get_user_info(self.request_from), False)}"
+        return f"Withdraw {self.amount} by {get_printable_user_name(self.user_info_provider.get_user_info(self.requested_user_id), False)}"
 
     def resolve_user_id(self, user_str: str) -> str:
         return self.user_info_provider.search_user(user_str)
@@ -89,10 +89,10 @@ class WithdrawCommandHandler(CommandHandler):
         if command_parts[3] != "from":
             raise CommandParamException("Expected 'from' keyword", 3)
         
-        self.request_from = self.resolve_user_id(command_parts[4])    
-        if self.request_from == self.user_id:
+        self.requested_user_id = self.resolve_user_id(command_parts[4])    
+        if self.requested_user_id == self.user_id:
             raise CommandParamException('You cannot transfer money to yourself', 4)
-        if not self.request_from:
+        if not self.requested_user_id:
             raise CommandParamException(f'User \'{command_parts[4]}\' not found, please type one of the following users (or part of their name):\n' + \
                 f'{"\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()])}', 4)
         
@@ -103,7 +103,7 @@ class WithdrawCommandHandler(CommandHandler):
             self.description = self.get_default_description()
 
         self.status = CommandStatus.PENDING_CONFIRMATION
-        from_user_name = get_printable_user_name(self.user_info_provider.get_user_info(self.request_from))
+        from_user_name = get_printable_user_name(self.user_info_provider.get_user_info(self.requested_user_id))
         return f"You are about to request the user {from_user_name} to confirm a withdrawal of {self.amount} " + \
             f"with description\n`{self.description}`\n" + \
             f"Please confirm by typing *yes* or *y*"
