@@ -23,8 +23,6 @@ python -m cb_bot.cb_bot
 pre Trial
 
 pre MVP
-- * add backup
-  - add cleanup
 - in request deposit, the notification to the user is showing the wrong requesting user
 - handle allowance
 - replace web server for cb_server to waitress
