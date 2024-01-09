@@ -34,5 +34,6 @@ post MVP
 - add more friendly answers
 - add admin commands
 - gracefull shutdown (check logs, close existing dialogs propertly)
+- add SU (set user) command for admins
 
 
