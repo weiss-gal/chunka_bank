@@ -16,9 +16,6 @@ python -m cb_server.cb_server <database path>
 - Start the bot with the following command (from repo root)
 python -m cb_bot.cb_bot
 
-## Under work
-- Add user in repo and server
-
 ## TODO
 pre Trial
 
