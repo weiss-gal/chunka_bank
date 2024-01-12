@@ -23,16 +23,12 @@ class CommandUtils:
         return f'{message}\n{marker_sign * last_line_len}'
 
     def get_transactions_table(transactions: List[UserTransactionInfo]) -> str:
-        headers = ['Time', 'Amount', 'Description'] # description may contain hebrew, so it must be last
-        table = [
-            [
-                get_user_printable_time(t.timestamp),
-                t.amount,
-                t.description,
-            ] for t in transactions
-        ]
-
-        return '\n'.join([f"`{line}`" for line in tabulate.tabulate(table, headers=headers, tablefmt='plain').split('\n')])
+        response = ''
+        for t in transactions:
+            aligned_amount = f'{t.amount:.2f}'.rjust(10)
+            response += f'**`{t.description}`**\n' + \
+                f'`{aligned_amount} | {get_user_printable_time(t.timestamp)}`\n\n'
+        return response
 
     MAX_DISCORD_MESSAGE_LEN = 2000
 
