@@ -65,8 +65,6 @@ class TransferCommandHandler(CommandHandler):
             self.status = CommandStatus.COMPLETED
             return CommandUtils.get_param_error_msg(e, command_parts)
         
-        self.amount = float(command_parts[1])
-        
         # parse to
         if command_parts[2] != 'to':
             self.status = CommandStatus.COMPLETED
