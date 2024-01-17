@@ -85,7 +85,17 @@ class CommandUtils:
             f"{' ' * element_offset}{'^' * element_len}```\n" + \
             f"{str(e)}"
         
-    def parse_amount(num_str: str, context) -> int:
+    def parse_amount(num_str: str, context) -> float:
+        try:
+            num = float(num_str)
+            if num <= 0:
+                raise CommandParamException('must be positive', context)
+            return num
+        except ValueError:
+            raise CommandParamException('invalid number', context)
+        
+    def parse_n(num_str: str, context) -> int:
+        """Parse a positive integer"""
         try:
             num = int(num_str)
             if num <= 0:

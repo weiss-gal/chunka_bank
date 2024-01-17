@@ -37,7 +37,7 @@ class WithdrawCommandHandler(CommandHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.status = CommandStatus.START
-        self.amount = None
+        self.amount: float = None
         self.requested_user_id = None
         self.channel: discord.channel = None
         self.last_activity: datetime = None

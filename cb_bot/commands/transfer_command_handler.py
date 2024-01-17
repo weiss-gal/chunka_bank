@@ -5,6 +5,7 @@ import discord
 import re
 
 from cb_bot.cb_server_connection import CBServerException
+from cb_bot.commands.command_exception import CommandParamException
 from cb_bot.common import get_printable_user_name
 from .command_handler import CommandHandler
 from .command_utils import CommandUtils
@@ -59,13 +60,10 @@ class TransferCommandHandler(CommandHandler):
         
         # parse amount
         try:
-            self.amount = float(command_parts[1])
-            if self.amount <= 0:
-                self.status = CommandStatus.COMPLETED
-                return f'Invalid amount: \'{command_parts[1]}\', must be positive'
-        except ValueError:
+            self.amount = CommandUtils.parse_amount(command_parts[1], 1)
+        except CommandParamException as e:
             self.status = CommandStatus.COMPLETED
-            return f'Invalid amount: \'{command_parts[1]}\''
+            return CommandUtils.get_param_error_msg(e, command_parts)
         
         self.amount = float(command_parts[1])
         
