@@ -22,6 +22,7 @@ pre Trial
 pre MVP
 - handle allowance
 - replace web server for cb_server to waitress
+- deploy on linux
 
 post MVP
 - add timed request for users 
