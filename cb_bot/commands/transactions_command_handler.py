@@ -64,7 +64,7 @@ class TransactionsCommandHandler(CommandHandler):
                 raise CommandFormatException()
             
             if parts[0] == 'last':
-                self.last_n = CommandUtils.parse_amount(parts[1], element_offset+1)
+                self.last_n = CommandUtils.parse_n(parts[1], element_offset+1)
             elif parts[0] == 'from':
                 self.from_date = self.parse_date(parts[1], element_offset+1)
             elif parts[0] == 'to':
