@@ -34,7 +34,7 @@ class WithdrawalRequestHandler(RequestHandler):
         self.channel: discord.channel = None
         self.last_activity: datetime = None
         # the timeout is longer for the initial request since the user may not notice it
-        self.timeout_s: float = type(self).TIMEOUT_S * 20 
+        self.timeout_s: float = 60 * 60 * 12 # 12 hours
 
     async def initiate_interaction(self, channel: discord.channel) -> bool:
         self.channel = channel
