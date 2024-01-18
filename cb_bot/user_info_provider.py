@@ -6,7 +6,6 @@ UserInfo = namedtuple('UserInfo', ['name', 'nickname', 'display_name', 'dm_chann
 ExternalUserInfo = namedtuple('ExternalUserInfo', ['user_id', 'name', 'nickname', 'display_name', 'dm_channel' ])
 
 class UserInfoProvider:
-
     def __init__(self, bot: commands.Bot, register_task: Callable):
         self.bot = bot
         self.users: dict[str, UserInfo] = {}

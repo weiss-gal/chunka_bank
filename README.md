@@ -20,7 +20,6 @@ python -m cb_bot.cb_bot
 pre Trial
 
 pre MVP
-- add show users
 - handle allowance
 
 post MVP

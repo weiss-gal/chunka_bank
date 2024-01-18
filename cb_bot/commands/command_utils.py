@@ -1,9 +1,9 @@
 from typing import Callable, List
 
-import tabulate
 from cb_bot.commands.command_exception import CommandParamException
 
-from cb_bot.common import get_user_printable_time
+from cb_bot.common import get_printable_user_name, get_user_printable_time
+from cb_bot.user_info_provider import ExternalUserInfo
 from models.transactions import UserTransactionInfo
 
 class CommandUtils:
@@ -106,3 +106,7 @@ class CommandUtils:
 
     def get_expired_msg() -> str:
         return '**Sorry**, I think you forgot about me, please start over'
+    
+    def get_users_table(users: List[ExternalUserInfo]) -> str:
+        return "\n".join(["  " + get_printable_user_name(user) for user in users])
+        

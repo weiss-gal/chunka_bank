@@ -10,8 +10,8 @@ import sys
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
 from cb_bot.commands.balance_command_handler import BalanceCommandHandler
-from cb_bot.commands.command_utils import CommandUtils
 from cb_bot.commands.deposit_command_handler import DepositCommandHandler
+from cb_bot.commands.show_users_command_handler import ShowUsersCommandHandler
 from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
 from cb_bot.commands.transfer_command_handler import TransferCommandHandler
 from cb_bot.commands.withdraw_command_handler import WithdrawCommandHandler
@@ -65,6 +65,7 @@ def main(args):
         TransactionsCommandHandler,
         DepositCommandHandler,
         WithdrawCommandHandler,
+        ShowUsersCommandHandler,
     ]
 
     intents = discord.Intents.default()
