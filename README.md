@@ -20,11 +20,14 @@ python -m cb_bot.cb_bot
 pre Trial
 
 pre MVP
+- add show users
 - handle allowance
-- replace web server for cb_server to waitress
-- deploy on linux
 
 post MVP
+- add SU (set user) command for admins
+- add gracefull shutdown from command 
+  - new command set (admin ?)
+  - warning in case of pending transfers
 - add timed request for users 
 - consider using the new bot ui feature (https://discordpy.readthedocs.io/en/stable/interactions/api.html#view)
 - execute commands one by one (request each part separately)
@@ -34,6 +37,7 @@ post MVP
 - add more friendly answers
 - add admin commands
 - gracefull shutdown (check logs, close existing dialogs propertly)
-- add SU (set user) command for admins
+
+- add export to excel to "show transactions"
 
 
