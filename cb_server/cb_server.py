@@ -1,6 +1,6 @@
 import argparse
 from datetime import datetime, timezone
-from json import JSONEncoder
+import logging
 import os
 from typing import List
 import flask
@@ -9,7 +9,6 @@ from models.server_errors import ErrorCodes, ServerError
 from models.transactions import UserTransactionInfo
 
 def get_timestamp_from_req(req , key: str) -> int:
-    print("the type of req is ", type(req)) # XXX - debug
     iso_time = req.args.get(key)
     if iso_time is None:
         return None
@@ -50,6 +49,12 @@ else:
 repo = Repo(args.db_path, create)
 
 app = flask.Flask(__name__)
+app.logger.setLevel(logging.INFO)
+
+@app.after_request
+def log_request_info(response):
+    app.logger.info(f'{flask.request.method} {flask.request.url} {response.status}')
+    return response
 
 @app.route('/user/<username>/balance', methods=['GET'])
 def get_user_balance(username):
