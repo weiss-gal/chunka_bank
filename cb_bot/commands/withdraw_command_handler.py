@@ -94,7 +94,7 @@ class WithdrawCommandHandler(CommandHandler):
             raise CommandParamException('You cannot transfer money to yourself', 4)
         if not self.requested_user_id:
             raise CommandParamException(f'User \'{command_parts[4]}\' not found, please type one of the following users (or part of their name):\n' + \
-                f'{"\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()])}', 4)
+                "\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()]), 4)
         
         if len(command_parts) > 5:
             # remove heading or trailing double/single quotes

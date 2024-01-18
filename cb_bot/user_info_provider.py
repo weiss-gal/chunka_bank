@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Callable
+from typing import Callable, List
 from discord.ext import commands
 
 UserInfo = namedtuple('UserInfo', ['name', 'nickname', 'display_name', 'dm_channel'])
@@ -46,6 +46,6 @@ class UserInfoProvider:
         
         return None
     
-    def get_all_users(self) -> list[ExternalUserInfo]:
+    def get_all_users(self) -> List[ExternalUserInfo]:
         return [self.get_user_info(k) for k in self.users.keys()]
 

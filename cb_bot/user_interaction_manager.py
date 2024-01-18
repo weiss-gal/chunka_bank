@@ -1,5 +1,5 @@
 import logging
-from typing import Type
+from typing import Type, List
 import discord
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
@@ -10,7 +10,7 @@ from cb_bot.commands.request_handler import RequestHandler
 from cb_bot.user_info_provider import UserInfoProvider
 
 class UserChannelState:
-    def __init__(self, interaction_handler: InteractionHandler = None, queue: list[RequestHandler] = []):
+    def __init__(self, interaction_handler: InteractionHandler = None, queue: List[RequestHandler] = []):
         self.interaction_handler = interaction_handler
         self.queue = queue
 
@@ -52,10 +52,10 @@ class UserChannelStateProvider:
         q = self.users[user_id][channel_id].queue
         return q.pop(0) if len(q) > 0 else None
     
-    def get_all_users(self) -> list[str]:
+    def get_all_users(self) -> List[str]:
         return list(self.users.keys())
     
-    def get_all_channels(self, user_id: str) -> list[str]:
+    def get_all_channels(self, user_id: str) -> List[str]:
         return list(self.users.get(user_id, {}).keys())
 
 class UserInteractionManager:
@@ -85,7 +85,7 @@ class UserInteractionManager:
                 res = await interaction.check_expired()
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)
 
-    def __init__(self, command_types: list[Type[CommandHandler]], cb_server_connection: CBServerConnection, 
+    def __init__(self, command_types: List[Type[CommandHandler]], cb_server_connection: CBServerConnection, 
                  user_info_provider: UserInfoProvider, user_mapper: UserMapper, register_fast_task: callable):
         
         if any([any([command_type.matches(phrase) for phrase in UserInteractionManager.HELLO_PHRASES]) for command_type in command_types]):
@@ -103,7 +103,7 @@ class UserInteractionManager:
         register_fast_task(self.process_queued_interactions)
         register_fast_task(self.cleanup_interactions)
 
-    def get_user_command_types(self, user_id: str) -> list[Type[CommandHandler]]:
+    def get_user_command_types(self, user_id: str) -> List[Type[CommandHandler]]:
         return [command_type for command_type in self.command_types if command_type.is_allowed(self.user_mapper.get_user_mapper_info(user_id))]
     
     async def _safe_handle_message(self, interaction: InteractionHandler, message: discord.Message) -> bool:
