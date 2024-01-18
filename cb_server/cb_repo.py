@@ -1,10 +1,16 @@
 import datetime
+import functools
+import inspect
 import sqlite3
 import uuid
+
+REQUIRED_DB_VERSION = 1
 
 BALANCE_TABLE = 'user_balance'
 USER_TABLE = 'user'
 TRANACTIONS_TABLE = 'transactions'
+VERSION_TABLE = 'version'
+#JOBS_TABLE = 'jobs'
 
 USERID_KEY = 'userid'
 BALANCE_KEY = 'balance'
@@ -13,6 +19,8 @@ VALUE_KEY = 'value'
 TIMESTAMP_KEY = 'timestamp'
 DESCRIPTION_KEY = 'description'
 ID_KEY = 'id'
+VERSION_KEY = 'version'
+#CRON_KEY = 'cron'
 
 class RepoException(Exception):
     pass
@@ -20,7 +28,78 @@ class RepoException(Exception):
 class UserNotFound(RepoException):
     pass
 
+# this wrapper function is used to reuse the same connection for multiple calls
+def reuse_conn(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # Check if 'conn' is in kwargs
+        params = inspect.signature(func).parameters
+        if 'conn' not in params:
+            raise ValueError(f"Function {func.__name__} does not have a 'conn' parameter")
+        
+        if kwargs.get('conn') is not None:
+            return func(self, *args, **kwargs)
+        
+        conn = sqlite3.connect(self.db_path)
+        kwargs['conn'] = conn
+        try:
+            result = func(self, *args, **kwargs)
+            conn.commit()
+            return result
+        finally:
+            conn.close()
+    return wrapper
+
 class Repo:
+    @reuse_conn
+    def get_database_version(self, conn: sqlite3.Connection=None) -> int:
+        # check if the version table exists
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{VERSION_TABLE}'")
+        res = cursor.fetchone()
+        cursor.close()
+        if res is None:
+            # no version table, this is a new database (version 0)
+            return 0
+        
+        # get the version
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT {VERSION_KEY} FROM {VERSION_TABLE}')
+        res = cursor.fetchone()
+        if res is None:
+            raise Exception(f"Database version table '{VERSION_TABLE}' exists but has no version")
+        
+        version = res[0]
+        return version
+    
+    def create_version_table(self, conn: sqlite3.Connection=None, version:int=REQUIRED_DB_VERSION):
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {VERSION_TABLE} (
+                {VERSION_KEY} INTEGER NOT NULL
+            )
+        ''')
+        cursor.execute(f'INSERT INTO {VERSION_TABLE} ({VERSION_KEY}) VALUES ({version})')
+        cursor.close()
+
+    def backward_compatibility(self):
+        # get database version
+        conn = sqlite3.connect(self.db_path)
+        db_version = self.get_database_version(conn=conn)
+        print(f'Database version: {db_version}')
+        while db_version < REQUIRED_DB_VERSION:
+            if db_version == 0:
+                print("Upgrading database from version 0 to 1")
+                # create the 'version' table. explicitly set the version to 1
+                self.create_version_table(conn, 1)
+                
+            # we commit after each version upgrade
+            conn.commit()   
+            db_version = self.get_database_version()
+
+        conn.close()
+        print(f"Database migration completed. Database is up to date ({db_version})")
+
     def create_database(self):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -48,6 +127,8 @@ class Repo:
                 {ID_KEY} TEXT NOT NULL
             )
         ''')
+        # create the version table
+        self.create_version_table(conn)
         conn.commit()
         conn.close()
 
@@ -55,6 +136,8 @@ class Repo:
         self.db_path = db_path
         if create:
             self.create_database()
+        else:
+            self.backward_compatibility()
         
     def get_user_balance(self, userid):
         conn = sqlite3.connect(self.db_path)
@@ -130,3 +213,6 @@ class Repo:
 
         conn.close()
         return res
+    
+    def update_jobs(self):
+        raise NotImplementedError()
