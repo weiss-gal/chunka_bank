@@ -83,7 +83,8 @@ class TransactionsCommandHandler(CommandHandler):
 
     async def handle_message(self, message: discord.Message) -> bool:
         command_parts = CommandUtils.split_message(message.content)
-        formats = f'```{"\n".join("  " + fmt for fmt in TransactionsCommandHandler.FORMATS)}```'
+        formats_list = "\n".join("  " + fmt for fmt in TransactionsCommandHandler.FORMATS)
+        formats = f'```{formats_list}```'
         msg = None
         try: 
             if len(command_parts) >= 4:

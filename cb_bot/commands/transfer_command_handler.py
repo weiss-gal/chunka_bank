@@ -77,8 +77,9 @@ class TransferCommandHandler(CommandHandler):
             return f'You cannot transfer money to yourself'
         if not self.to:
             self.status = CommandStatus.COMPLETED
+            users_list = "\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()])
             return f'User \'{to_str}\' not found, please type one of the following users (or part of their name):\n' + \
-                f'{"\n".join(["  " + get_printable_user_name(user) for user in self.user_info_provider.get_all_users()])}'
+                    users_list
         
         # parse description
         if len(command_parts) > 4:

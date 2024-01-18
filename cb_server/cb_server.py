@@ -21,7 +21,7 @@ def get_timestamp_from_req(req , key: str) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Starts the Chunka bank database server")
-    parser.add_argument('db_path', help='Database file path ')
+    parser.add_argument('db_path', nargs="?", default=os.environ.get('CB_DB_PATH', None), help='Database file path')
     parser.add_argument('-c', '--create', action='store_true', help='Create a new database')
     return parser.parse_args()
 
@@ -118,5 +118,16 @@ def get_user_transactions(username):
     return flask.jsonify([t._asdict() for t in transactions_list])
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
+    from waitress import serve
+    from urllib.parse import urlparse
+    cb_server_url = os.environ.get('CB_SERVER_URL', 'http://127.0.0.1:5000')
+    
+    parsed = urlparse(cb_server_url)
+    if parsed.scheme != 'http':
+        raise Exception("only HTTP is supported")
+    if parsed.hostname not in ['localhost', '127.0.0.1']:
+        raise Exception("cb server must run on localhost, since its not protected")
+
+    serve(app, listen=parsed.netloc)
+    
 
