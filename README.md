@@ -20,7 +20,11 @@ python -m cb_bot.cb_bot
 pre Trial
 
 pre MVP
+- add multiple shards protection
 - handle allowance
+  - (done) add backward compatiblity
+  - add jobs table and jobs support
+  - (optional for pre MVP) add command for jobs
 
 post MVP
 - add SU (set user) command for admins
