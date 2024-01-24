@@ -21,6 +21,9 @@ pre Trial
 
 pre MVP
 - handle allowance
+  - (done) add backward compatiblity
+  - add jobs table and jobs support
+  - (optional for pre MVP) add command for jobs
 
 post MVP
 - add SU (set user) command for admins

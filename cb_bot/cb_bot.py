@@ -6,6 +6,7 @@ import discord
 from discord.ext import tasks
 from discord.ext import commands
 import sys
+from cb_bot.TaskException import TaskFatalException
 
 from cb_bot.cb_server_connection import CBServerConnection
 from cb_bot.cb_user_mapper import UserMapper
@@ -15,6 +16,7 @@ from cb_bot.commands.show_users_command_handler import ShowUsersCommandHandler
 from cb_bot.commands.transactions_command_handler import TransactionsCommandHandler
 from cb_bot.commands.transfer_command_handler import TransferCommandHandler
 from cb_bot.commands.withdraw_command_handler import WithdrawCommandHandler
+from cb_bot.lock_channel_manager import LockChannelManager
 from cb_bot.styling import Styling
 from cb_bot.updates_manager import UpdatesManager
 from cb_bot.user_interaction_manager import UserInteractionManager
@@ -77,6 +79,7 @@ def main(args):
 
     fast_tasks: List[callable] = [] # every second
     slow_tasks: List[callable] = [] # every 10 seconds
+    is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
 
     client = commands.Bot(command_prefix='', intents=intents)
     user_info_provider = UserInfoProvider(client, lambda t: slow_tasks.append(t))
@@ -86,27 +89,58 @@ def main(args):
 
     # this is the channel used to send notifications to all users
     general_channel = None
+    lock_channel_manager = LockChannelManager(client, lambda t: fast_tasks.append(t))
+
+    async def check_stop():
+        if not is_stopped:
+            return
+        
+        print(f"Bot {client.user} is going to sleep")
+        if general_channel is not None:
+            bye_bye_embed = discord.Embed(title=f"Bot __{client.user.display_name}__ is going to sleep", 
+                url=None, description="Bye bye.", color=Styling.DOWN_COLOR)
+            await general_channel.send(embed=bye_bye_embed)
+        await client.close()
+    
+    fast_tasks.append(check_stop)
 
     # tasks to be executed every second
     @tasks.loop(seconds=1)  
     async def execute_fast_tasks():
+        nonlocal is_stopped
         for task in fast_tasks:
-            await task()
+            try:
+                await task()
+            except TaskFatalException as e:
+                print("Fatal error in task: ", e)
+                logging.error(f"Fatal error in task: {e}")
+                is_stopped = True
 
     # tasks to be executed every 10 seconds
 
     @tasks.loop(seconds=10)
     async def execute_slow_tasks():
+        nonlocal is_stopped
         if len(client.guilds) > 1:
             raise Exception('More than one guild is not supported')
         
         for task in slow_tasks:
-            await task()
+            try:
+                await task()
+            except TaskFatalException as e:
+                print("Fatal error in task: ", e)
+                logging.error(f"Fatal error in task: {e}")
+                is_stopped = True
 
     @client.event
     async def on_ready():
         nonlocal general_channel
+        nonlocal is_stopped
         print(f"Bot {client.user} is ready")
+        if not await lock_channel_manager.on_ready():
+            print("Starting the lock channel manager failed")
+            is_stopped = True
+
         execute_fast_tasks.start()
         execute_slow_tasks.start()
         # print message on general channel
@@ -117,6 +151,10 @@ def main(args):
         
     @client.event
     async def on_message(message):
+        # hook lock channel manager
+        if await lock_channel_manager.on_message(message):
+            return
+
         # ignore message on anything but private channel
         if not isinstance(message.channel, discord.channel.DMChannel):
             return
@@ -133,22 +171,13 @@ def main(args):
         
         logging.info(f"Message recieved: {content}, User: {user}, Channel: {channel}")
         await user_interaction_manager.handle_message(message)
-    is_stopped = False # used to stop the bot forcefully when SIGINT(ctrl-c) is received twice
     def terminanation_handler(sig, frame):
         nonlocal is_stopped
         if is_stopped:
             exit(0)
         
         is_stopped = True
-        print(f"Bot {client.user} is going to sleep")
-        async def stop():
-            if general_channel is not None:
-                bye_bye_embed = discord.Embed(title=f"Bot __{client.user.display_name}__ is going to sleep", 
-                    url=None, description="Bye bye.", color=Styling.DOWN_COLOR)
-                await general_channel.send(embed=bye_bye_embed)
-            await client.close()
-        
-        fast_tasks.append(stop)
+        logging.info('SIGINT received, stopping bot')
         
     signal.signal(signal.SIGINT, terminanation_handler)
 
