@@ -110,8 +110,7 @@ class LockChannelManager():
                 count = self.ping_requests[request_id].response_count + 1
                 self.ping_requests[request_id] = PingRequestContext(request_time = self.ping_requests[request_id].request_time,
                     response_count = count)
-                
-            
+                        
             # this is not our request, ignore it
             return True
                     
