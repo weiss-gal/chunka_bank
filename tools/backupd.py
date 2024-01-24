@@ -47,7 +47,10 @@ def validate_env(c: Configuration):
         raise Exception(f"backup path '{c.backup_path}' is not a directory")
     
     # validate the sqlit3 command
-    if os.system(f'{os.path.join(c.sqlite_tools_path, 'sqlite3')} --version') != 0:
+    sqlite3_path = os.path.join(c.sqlite_tools_path, 'sqlite3')
+    if not os.path.exists(sqlite3_path) or not os.path.isfile(sqlite3_path):
+        raise Exception(f"sqlite3 tool is not found in '{sqlite3_path}'")
+    if os.system(f"{os.path.join(c.sqlite_tools_path, 'sqlite3')} --version") != 0:
         raise Exception("sqlite3 command not found")
     
     # validate the log path
@@ -77,7 +80,8 @@ def get_next_backup_time(c: Configuration):
     
     # parse the last backup file name
     last_backup_time = get_time_from_backup_file_name(backup_files[-1])  
-    return last_backup_time + timedelta(seconds=c.backup_interval_s)
+    return max(last_backup_time + timedelta(seconds=c.backup_interval_s), \
+            datetime.now() - timedelta(seconds=1))
 
 def dump_db(c: Configuration) -> str:
     # dump the db to a temp file
