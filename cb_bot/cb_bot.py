@@ -109,6 +109,7 @@ def main(args):
     # tasks to be executed every second
     @tasks.loop(seconds=1)  
     async def execute_fast_tasks():
+        nonlocal is_stopped
         for task in fast_tasks:
             try:
                 await task()
@@ -121,6 +122,7 @@ def main(args):
 
     @tasks.loop(seconds=10)
     async def execute_slow_tasks():
+        nonlocal is_stopped
         if len(client.guilds) > 1:
             raise Exception('More than one guild is not supported')
         
@@ -135,6 +137,7 @@ def main(args):
     @client.event
     async def on_ready():
         nonlocal general_channel
+        nonlocal is_stopped
         print(f"Bot {client.user} is ready")
         if not await lock_channel_manager.on_ready():
             print("Starting the lock channel manager failed") # XXX - remove
