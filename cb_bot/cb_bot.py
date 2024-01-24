@@ -94,8 +94,7 @@ def main(args):
     lock_channel_manager = LockChannelManager(client, lambda t: fast_tasks.append(t))
 
     async def check_stop():
-        print("is_stopped: ", is_stopped) # XXX - remove
-        if is_stopped:
+        if not is_stopped:
             return
         
         print(f"Bot {client.user} is going to sleep")
