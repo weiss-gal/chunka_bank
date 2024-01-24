@@ -8,7 +8,8 @@ class TaskException(Exception):
 
 class TaskFatalException(TaskException):
     """
-    Exception that indicates that a task has failed so fatally that the bot should stop"""
+    Exception that indicates that a task has failed so fatally that the bot should stop
+    """
     def __init__(self, message):
         super().__init__(message)
         

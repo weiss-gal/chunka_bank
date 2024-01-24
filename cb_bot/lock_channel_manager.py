@@ -20,7 +20,7 @@ class LockChannelManager():
     LOCK_CHANNEL_NAME = 'chunka-bank-lock-channel'
     PING_PHARSE = 'ping'
     PONG_PHARSE = 'pong'
-    PING_REQUEST_TIMEOUT_S = 100 # seconds
+    PING_REQUEST_TIMEOUT_S = 20 # seconds
 
     async def create_lock_channel(self) -> discord.TextChannel:
         """
@@ -53,7 +53,6 @@ class LockChannelManager():
         self.ping_requests = {}
 
         register_task(self.purge_ping_requests)
-
 
     async def on_ready(self) -> bool:
         # check which guilds the bot is connected to
