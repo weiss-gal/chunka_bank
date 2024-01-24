@@ -64,9 +64,6 @@ class LockChannelManager():
         
         # get the guild
         self.guild = self.bot.guilds[0]
-        print("Connected to guild: " + self.guild.name) # XXX - remove
-        print("Available channels:", self.guild.channels) # XXX - remove
-        print("lock channels: ", [f"{c.id}: {c.name}" for c in self.guild.channels if c.name == LockChannelManager.LOCK_CHANNEL_NAME]) # XXX - remove
         self.lock_channel = next((c for c in self.guild.channels if c.name == LockChannelManager.LOCK_CHANNEL_NAME), None) 
         if self.lock_channel is None: 
             self.lock_channel = await self.create_lock_channel()
@@ -92,7 +89,6 @@ class LockChannelManager():
                 return True
               
             request_id = msg_parts[1]
-            print("Got ping for request id: ", request_id) # XXX - remove
             if request_id in self.ping_requests.keys():
                 # this is our request, ignore it
                 return True
@@ -105,7 +101,6 @@ class LockChannelManager():
                 return True
             
             request_id = msg_parts[1]
-            print("Got pong for request id: ", request_id) # XXX - remove
             if request_id in self.ping_requests.keys():
                 count = self.ping_requests[request_id].response_count + 1
                 self.ping_requests[request_id] = PingRequestContext(request_time = self.ping_requests[request_id].request_time,

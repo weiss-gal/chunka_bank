@@ -34,13 +34,11 @@ class UserInfoProvider:
         return ExternalUserInfo(user_id = user_id, **self.users[user_id]._asdict())
 
     def search_user(self, search_str: str) -> str:
-        print("Searching for user: ", search_str) # XXX debug
         for user_key in self.users.keys():
             user_info = self.users[user_key]
             search_str = search_str.lower()
             if user_info.name.lower().startswith(search_str) or user_info.nickname.lower().startswith(search_str) \
                 or user_info.display_name.lower().startswith(search_str):
-                print("Found user: ", user_info) # XXX debug
                 return user_key
         
         return None

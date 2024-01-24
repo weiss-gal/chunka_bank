@@ -1,7 +1,5 @@
 from collections import namedtuple
-from datetime import datetime
 import logging
-import random
 import signal
 from typing import List
 import discord
@@ -114,7 +112,7 @@ def main(args):
             try:
                 await task()
             except TaskFatalException as e:
-                print("Fatal error in task: ", e) # XXX - remove
+                print("Fatal error in task: ", e)
                 logging.error(f"Fatal error in task: {e}")
                 is_stopped = True
 
@@ -130,7 +128,7 @@ def main(args):
             try:
                 await task()
             except TaskFatalException as e:
-                print("Fatal error in task: ", e) # XXX - remove
+                print("Fatal error in task: ", e)
                 logging.error(f"Fatal error in task: {e}")
                 is_stopped = True
 
@@ -140,7 +138,7 @@ def main(args):
         nonlocal is_stopped
         print(f"Bot {client.user} is ready")
         if not await lock_channel_manager.on_ready():
-            print("Starting the lock channel manager failed") # XXX - remove
+            print("Starting the lock channel manager failed")
             is_stopped = True
 
         execute_fast_tasks.start()

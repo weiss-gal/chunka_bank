@@ -97,7 +97,7 @@ def create_backup(c: Configuration):
         backup_file.write(c.mapper_path, os.path.basename(c.mapper_path))
         backup_file.write(temp_file_name, os.path.basename(temp_file_name))
         
-    print(f"Backup file created at {os.path.join(c.backup_path, backup_file_name)}") # XXX - debug
+    print(f"Backup file created at {os.path.join(c.backup_path, backup_file_name)}")
 
 def main():
     # make sure that environment is ready
@@ -106,7 +106,7 @@ def main():
     logging.basicConfig(filename=os.path.join(configuration.log_path, 'backupd.log'), level=logging.INFO)
 
     next_backup_time = get_next_backup_time(configuration)
-    print(f"Next backup time is {next_backup_time}") # XXX - debug
+    print(f"Next backup time is {next_backup_time}")
     while True:
         now = datetime.now()
         if now < next_backup_time:
