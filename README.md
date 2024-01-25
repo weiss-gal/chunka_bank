@@ -1,5 +1,12 @@
 # chunka_bank
-a family pseudo banking application
+a family pseudo banking application. 
+
+It has started as a simple project and by now have a few thousands lines of code and over 80 commits (And I didn't even officially deploy it yet). 
+
+My idea was to manage my kids weekly allowance in an easier way than an excel file. Nevertheless, I didn't want to write an application or worry about a web server. 
+so I thought that just using a chatbot would be great. we are now testing it, it looks quite good, although I should probabaly ditch the complicated text commands in favor of using the discord "view"s (which I just recently learned about their existence). 
+
+If you are trying to use it and fail for lack of instructions, just drop me a line or open an issue in Github. I'll do my best to help if I have the time. 
 
 ## How to run
 - Start the server using the following command:
