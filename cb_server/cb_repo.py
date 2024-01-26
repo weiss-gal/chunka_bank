@@ -1,16 +1,20 @@
 import datetime
+from enum import Enum
 import functools
 import inspect
 import sqlite3
 import uuid
+from apscheduler.schedulers.background import BackgroundScheduler
 
-REQUIRED_DB_VERSION = 1
+from cb_server.jobs_lock import JobsLock
+
+REQUIRED_DB_VERSION = 2
 
 BALANCE_TABLE = 'user_balance'
 USER_TABLE = 'user'
 TRANACTIONS_TABLE = 'transactions'
 VERSION_TABLE = 'version'
-#JOBS_TABLE = 'jobs'
+JOBS_TABLE = 'jobs'
 
 USERID_KEY = 'userid'
 BALANCE_KEY = 'balance'
@@ -20,13 +24,19 @@ TIMESTAMP_KEY = 'timestamp'
 DESCRIPTION_KEY = 'description'
 ID_KEY = 'id'
 VERSION_KEY = 'version'
-#CRON_KEY = 'cron'
+CRON_KEY = 'cron'
+ACTION_KEY = 'action'
+ACTION_PARAMS_KEY = 'action_params' # this is a json string
+LAST_RUN_KEY = 'last_run'
 
 class RepoException(Exception):
     pass
 
 class UserNotFound(RepoException):
     pass
+
+class ActionType(Enum):
+    TRANSFER = 1
 
 # this wrapper function is used to reuse the same connection for multiple calls
 def reuse_conn(func):
@@ -55,7 +65,7 @@ class Repo:
     def get_database_version(self, conn: sqlite3.Connection=None) -> int:
         # check if the version table exists
         cursor = conn.cursor()
-        cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{VERSION_TABLE}'")
+        cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{VERSION_TABLE}'")    
         res = cursor.fetchone()
         cursor.close()
         if res is None:
@@ -65,40 +75,73 @@ class Repo:
         # get the version
         cursor = conn.cursor()
         cursor.execute(f'SELECT {VERSION_KEY} FROM {VERSION_TABLE}')
-        res = cursor.fetchone()
-        if res is None:
-            raise Exception(f"Database version table '{VERSION_TABLE}' exists but has no version")
-        
-        version = res[0]
+        res = cursor.fetchmany(2)
+        if len(res) != 1:
+            raise Exception(f"Database version table '{VERSION_TABLE}' exists but has {len(res)} rows")
+
+        version = res[0][0]
         return version
     
+    @reuse_conn
     def create_version_table(self, conn: sqlite3.Connection=None, version:int=REQUIRED_DB_VERSION):
         cursor = conn.cursor()
         cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {VERSION_TABLE} (
+            CREATE TABLE {VERSION_TABLE} (
                 {VERSION_KEY} INTEGER NOT NULL
             )
         ''')
         cursor.execute(f'INSERT INTO {VERSION_TABLE} ({VERSION_KEY}) VALUES ({version})')
         cursor.close()
 
+    def set_db_version(self, version: int, conn: sqlite3.Connection):
+        if self.get_database_version(conn=conn) == 0:
+            self.create_version_table(conn=conn, version=version)
+        else:
+            cursor = conn.cursor()
+            cursor.execute(f'UPDATE {VERSION_TABLE} SET {VERSION_KEY}=?', (version,))
+            cursor.close()
+
+    @reuse_conn
+    def create_jobs_table(self, conn: sqlite3.Connection=None):
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {JOBS_TABLE} (
+                {USERID_KEY} TEXT PRIMARY KEY,
+                {CRON_KEY} TEXT NOT NULL,
+                {ACTION_KEY} INTEGER NOT NULL,
+                {ACTION_PARAMS_KEY} TEXT NOT NULL, 
+                {DESCRIPTION_KEY} TEXT NOT NULL,
+                {LAST_RUN_KEY} INTEGER NOT NULL
+            )
+        ''')
+
     def backward_compatibility(self):
         # get database version
-        conn = sqlite3.connect(self.db_path)
-        db_version = self.get_database_version(conn=conn)
-        print(f'Database version: {db_version}')
-        while db_version < REQUIRED_DB_VERSION:
-            if db_version == 0:
-                print("Upgrading database from version 0 to 1")
-                # create the 'version' table. explicitly set the version to 1
-                self.create_version_table(conn, 1)
-                
-            # we commit after each version upgrade
-            conn.commit()   
-            db_version = self.get_database_version()
+        is_migrated = False
+        with sqlite3.connect(self.db_path) as conn:
+            db_version = self.get_database_version(conn=conn)
+            while db_version < REQUIRED_DB_VERSION:
+                is_migrated = True
+                print(f"upgrading database from version {db_version} to {db_version + 1}")
+                if db_version == 0:
+                    # no need to explicitly create the version table, it will be done by 'set_db_version'
+                    pass
+                elif db_version == 1:
+                    # create the 'jobs' table
+                    self.create_jobs_table(conn=conn)
+                else:
+                    raise Exception(f"Unknown database version {db_version}")
 
-        conn.close()
-        print(f"Database migration completed. Database is up to date ({db_version})")
+                self.set_db_version(db_version + 1, conn=conn)
+                
+                # we commit after each version upgrade
+                conn.commit()   
+                db_version = self.get_database_version(conn=conn)
+
+        if is_migrated:
+            print("Database migration completed.", end=" ")
+    
+        print(f"Database is up to date (version={db_version})")
 
     def create_database(self):
         conn = sqlite3.connect(self.db_path)
@@ -129,15 +172,29 @@ class Repo:
         ''')
         # create the version table
         self.create_version_table(conn)
+        self.create_jobs_table(conn)
         conn.commit()
         conn.close()
 
-    def __init__(self, db_path: str, create: bool=False):
+    def process_jobs(self):
+        pass
+
+    def __init__(self, db_path: str, create: bool=False, ):
+        thread_safe = sqlite3.threadsafety
+        if thread_safe < 1:
+            raise Exception(f"sqlite3 is not thread safe (level={thread_safe}). Level 1 or higher is required")
+        
         self.db_path = db_path
         if create:
             self.create_database()
         else:
             self.backward_compatibility()
+
+        # take the jobs lock so only one instance of the job processor is running at a time
+        self.jobs_lock = JobsLock(db_path)
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(self.process_jobs, 'interval', seconds=10)
+        scheduler.start()
         
     def get_user_balance(self, userid):
         conn = sqlite3.connect(self.db_path)
@@ -214,5 +271,9 @@ class Repo:
         conn.close()
         return res
     
+    def close(self):
+        self.jobs_lock.drop()
+        print("propery closing the database")
+
     def update_jobs(self):
         raise NotImplementedError()
