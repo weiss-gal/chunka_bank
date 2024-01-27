@@ -28,6 +28,8 @@ CRON_KEY = 'cron'
 ACTION_KEY = 'action'
 ACTION_PARAMS_KEY = 'action_params' # this is a json string
 LAST_RUN_KEY = 'last_run'
+LAST_RUN_STATUS_KEY = 'last_run_status'
+LAST_RUN_ERROR_KEY = 'last_run_error'
 
 class RepoException(Exception):
     pass
@@ -110,8 +112,10 @@ class Repo:
                 {CRON_KEY} TEXT NOT NULL,
                 {ACTION_KEY} INTEGER NOT NULL,
                 {ACTION_PARAMS_KEY} TEXT NOT NULL, 
-                {DESCRIPTION_KEY} TEXT NOT NULL,
-                {LAST_RUN_KEY} INTEGER NOT NULL
+                {DESCRIPTION_KEY} TEXT NOT NULL, 
+                {LAST_RUN_KEY} INTEGER NOT NULL, 
+                {LAST_RUN_STATUS_KEY} INTEGER NOT NULL,
+                {LAST_RUN_ERROR_KEY} TEXT NOT NULL,
             )
         ''')
 
