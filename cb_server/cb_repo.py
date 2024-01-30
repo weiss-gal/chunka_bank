@@ -30,6 +30,9 @@ ACTION_PARAMS_KEY = 'action_params' # this is a json string
 LAST_RUN_KEY = 'last_run'
 LAST_RUN_STATUS_KEY = 'last_run_status'
 LAST_RUN_ERROR_KEY = 'last_run_error'
+# boolean, true means that if multiple events were missed, 
+# they will be handled one after the other
+HANDLE_MISSED_EVENTS_KEY = 'handle_missed_events' 
 
 class RepoException(Exception):
     pass
@@ -116,6 +119,7 @@ class Repo:
                 {LAST_RUN_KEY} INTEGER NOT NULL, 
                 {LAST_RUN_STATUS_KEY} INTEGER NOT NULL,
                 {LAST_RUN_ERROR_KEY} TEXT NOT NULL,
+                {HANDLE_MISSED_EVENTS_KEY} INTEGER NOT NULL
             )
         ''')
 

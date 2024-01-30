@@ -1,3 +1,4 @@
+from datetime import datetime
 import unittest
 from cb_server.crontab import CronParsingException, CronTab
 
@@ -51,6 +52,14 @@ class CronTabTests(unittest.TestCase):
 
         cron.from_line('* * * * *')
         self.assertEqual(cron.to_string(), '*\t*\t*\t*\t*')
+
+
+    def test_get_next_run(self):
+        cron = CronTab()
+        cron.from_line('0 0 1 1 1')
+        self.assertEqual(cron.get_next_run(datetime(2024, 1, 31, 0, 49, 0)), datetime(2025, 1, 1, 0, 0, 0))
+        cron.from_line('5 0 * 8 *')
+        self.assertEqual(cron.get_next_run(datetime(2024, 1, 31, 0, 49, 0)), datetime(2024, 8, 1, 0, 5, 0))
 
 if __name__ == '__main__':
     unittest.main()

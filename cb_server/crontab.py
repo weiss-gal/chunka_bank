@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import List, Set
+from croniter import croniter
 
 class CronParsingException(Exception):
     pass
@@ -115,3 +117,10 @@ class CronTab:
             self._set_to_string(self.day_of_week, 0, 6)
         ])
     
+    def get_next_run(self, now: datetime) -> datetime:
+        """
+        Returns the next time this cron line should run.
+        now: The current time
+        """
+        iter = croniter(self.to_string(), now)
+        return iter.get_next(datetime)
