@@ -1,10 +1,14 @@
-import datetime
+from collections import namedtuple
+from datetime import datetime, timedelta
 from enum import Enum
 import functools
 import inspect
+import json
+import logging
 import sqlite3
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
+from cb_server.crontab import CronTab
 
 from cb_server.jobs_lock import JobsLock
 
@@ -33,6 +37,11 @@ LAST_RUN_ERROR_KEY = 'last_run_error'
 # boolean, true means that if multiple events were missed, 
 # they will be handled one after the other
 HANDLE_MISSED_EVENTS_KEY = 'handle_missed_events' 
+
+OLD_JOBS_HANDLING_MAX_TIME = 60 # days
+
+JobInfo = namedtuple('JobInfo', ['id', 'userid', 'cron', 'action', 'action_params', 'description', 'last_run', 
+                                 'last_run_status', 'last_run_error', 'handle_missed_events'])
 
 class RepoException(Exception):
     pass
@@ -111,7 +120,8 @@ class Repo:
         cursor = conn.cursor()
         cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {JOBS_TABLE} (
-                {USERID_KEY} TEXT PRIMARY KEY,
+                {ID_KEY} TEXT PRIMARY KEY,
+                {USERID_KEY} TEXT NOT NULL,
                 {CRON_KEY} TEXT NOT NULL,
                 {ACTION_KEY} INTEGER NOT NULL,
                 {ACTION_PARAMS_KEY} TEXT NOT NULL, 
@@ -184,8 +194,92 @@ class Repo:
         conn.commit()
         conn.close()
 
+    def _process_job(self, job_info: JobInfo, ts: datetime, conn: sqlite3.Connection, 
+            is_catching_up: bool=False):
+        
+        # run the job
+        last_run_status = 0
+        last_run_error = ''
+
+        action_params = json.loads(job_info.action_params)
+        desc = action_params.get('description', '')
+        if is_catching_up:
+            desc += f" (catching up to {ts.isoformat()})"
+        if job_info.action == ActionType.TRANSFER.value:
+            success, msg = self.transfer_money(job_info.userid, action_params['to'], action_params['value'], desc, 
+                conn=conn)
+            if not success:
+                logging.error(f"Failed to run job '{job_info.id}': {msg}")
+                last_run_status = -1 
+                last_run_error = msg
+        else:
+            raise Exception(f"Unknown action type {job_info.action}")
+        
+        # update the last run time
+        cursor = conn.cursor()
+        cursor.execute(f'''UPDATE {JOBS_TABLE} SET {LAST_RUN_KEY}=?, {LAST_RUN_STATUS_KEY}=?, {LAST_RUN_ERROR_KEY}=? 
+            WHERE {ID_KEY}=?''', (int(ts.timestamp()), last_run_status, last_run_error, job_info.id))
+        cursor.close()
+        conn.commit()
+
+    def process_job(self, job_info: JobInfo, conn: sqlite3.Connection):
+        # if a job did not run for more than 60 days, we don't handle missed events
+        # this is to prevent a scenario of loading very old database causing problems
+        is_handle_missed_events = job_info.handle_missed_events == 1
+        last_run = datetime.fromtimestamp(job_info.last_run + 1) # add 1 second to prevent running the job twice
+        if last_run < datetime.now() - timedelta(days=OLD_JOBS_HANDLING_MAX_TIME):
+            last_run = datetime.now() - timedelta(days=OLD_JOBS_HANDLING_MAX_TIME)
+            is_handle_missed_events = False
+            logging.warning(f"Job '{job_info.id}' did not run for more than {OLD_JOBS_HANDLING_MAX_TIME} days," + 
+                " disabling 'handle_missed_events'")
+            
+        cron = CronTab()
+        cron.from_line(job_info.cron)
+        next_run = cron.get_next_run(last_run)
+        
+        missed_events_times = []
+        
+        if is_handle_missed_events:
+            # calculate the number of missed events
+            while next_run < datetime.now():
+                missed_events_times.append(next_run)
+                next_run = cron.get_next_run(next_run)
+        
+            for ts in missed_events_times[:-1]:
+                self._process_job(job_info, ts, conn=conn, is_catching_up=True)
+            
+            # the last missed event is the next run time
+            next_run = missed_events_times[-1] if len(missed_events_times) > 0 else next_run
+        
+        if next_run < datetime.now():
+            self._process_job(job_info, ts=datetime.now(), conn=conn)
+
     def process_jobs(self):
-        pass
+        # get all the jobs
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT {ID_KEY} FROM {JOBS_TABLE}')
+        jobs_ids = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.commit() # close the transactions, se we want to handle each job in a separate transaction
+        for job_id in jobs_ids:
+            cursor = conn.cursor()
+            cursor.execute(f'''SELECT {ID_KEY}, {USERID_KEY}, {CRON_KEY}, {ACTION_KEY}, {ACTION_PARAMS_KEY}, 
+                {DESCRIPTION_KEY}, {LAST_RUN_KEY}, {LAST_RUN_STATUS_KEY}, {LAST_RUN_ERROR_KEY}, 
+                {HANDLE_MISSED_EVENTS_KEY} FROM {JOBS_TABLE} WHERE {ID_KEY}=?
+                ''', (job_id,))
+            
+            result = cursor.fetchone()
+            if result is None:
+                # job was deleted, That's weird, but not neccessarily an error
+                logging.warning(f"Job '{job_id}' was deleted while processing it")
+            else:
+                job_info = JobInfo(*result)
+                self.process_job(job_info, conn=conn)
+
+            cursor.close()
+                
+        conn.close()        
 
     def __init__(self, db_path: str, create: bool=False, ):
         thread_safe = sqlite3.threadsafety
@@ -198,11 +292,12 @@ class Repo:
         else:
             self.backward_compatibility()
 
+        self.jobs_cache = {}
         # take the jobs lock so only one instance of the job processor is running at a time
         self.jobs_lock = JobsLock(db_path)
-        scheduler = BackgroundScheduler()
-        scheduler.add_job(self.process_jobs, 'interval', seconds=10)
-        scheduler.start()
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.add_job(self.process_jobs, 'interval', seconds=60)
+        self.scheduler.start()
         
     def get_user_balance(self, userid):
         conn = sqlite3.connect(self.db_path)
@@ -235,28 +330,37 @@ class Repo:
 
         return True, None
     
-    def transfer_money(self, from_userid: str, to_userid: str, value: float, description: str):
-        conn = sqlite3.connect(self.db_path)
+    @reuse_conn
+    def transfer_money(self, from_userid: str, to_userid: str, value: float, description: str, 
+            conn: sqlite3.Connection):
         cursor = conn.cursor()
-        cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (from_userid,))
-        from_balance = float(cursor.fetchone()[0])
-        cursor.execute(f'SELECT {OVERDRAFT_LIMIT_KEY} FROM {USER_TABLE} WHERE {USERID_KEY}=?', (from_userid,))
-        overdraft_limit = float(cursor.fetchone()[0])
-        if from_balance + overdraft_limit < value:
-            return False, 'Insufficient funds'
-        
-        timestamp = int(datetime.datetime.now().timestamp())
-        guid = str(uuid.uuid4()) # guid is unique for user.
-        cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (to_userid,))
-        to_balance = float(cursor.fetchone()[0])
-        cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (from_balance - value, from_userid))
-        cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (to_balance + value, to_userid))
-        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
-                           VALUES (?, ?, ?, ?, ?)''', (from_userid, -value, timestamp, description, guid))
-        cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
-                           VALUES (?, ?, ?, ?, ?)''', (to_userid, value, timestamp, description, guid))
-        conn.commit()
-        conn.close()
+        try: 
+            cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (from_userid,))
+            result = cursor.fetchone()
+            if result is None:
+                return False, f"Transfer failed: transferring user '{from_userid}' not found"
+            from_balance = float(result[0])
+
+            cursor.execute(f'SELECT {OVERDRAFT_LIMIT_KEY} FROM {USER_TABLE} WHERE {USERID_KEY}=?', (from_userid,))
+            overdraft_limit = float(cursor.fetchone()[0])
+            if from_balance + overdraft_limit < value:
+                return False, 'Insufficient funds'
+            
+            timestamp = int(datetime.now().timestamp())
+            guid = str(uuid.uuid4()) # guid is unique for user.
+            cursor.execute(f'SELECT {BALANCE_KEY} FROM {BALANCE_TABLE} WHERE {USERID_KEY}=?', (to_userid,))
+            result = cursor.fetchone()
+            if result is None:
+                return False, f"Transfer failed: target user '{to_userid}' not found"
+            to_balance = float(result[0])
+            cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (from_balance - value, from_userid))
+            cursor.execute(f'UPDATE {BALANCE_TABLE} SET {BALANCE_KEY}=? WHERE {USERID_KEY}=?', (to_balance + value, to_userid))
+            cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
+                            VALUES (?, ?, ?, ?, ?)''', (from_userid, -value, timestamp, description, guid))
+            cursor.execute(f'''INSERT INTO {TRANACTIONS_TABLE} ({USERID_KEY}, {VALUE_KEY}, {TIMESTAMP_KEY}, {DESCRIPTION_KEY}, {ID_KEY}) 
+                            VALUES (?, ?, ?, ?, ?)''', (to_userid, value, timestamp, description, guid))
+        finally:    
+            cursor.close()
 
         return True, None
     
@@ -280,6 +384,7 @@ class Repo:
         return res
     
     def close(self):
+        self.scheduler.shutdown()
         self.jobs_lock.drop()
         print("propery closing the database")
 
