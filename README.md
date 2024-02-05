@@ -24,7 +24,6 @@ python -m cb_server.cb_server <database path>
 python -m cb_bot.cb_bot
 
 ## TODO
-pre Trial
 
 pre MVP
 - handle allowance

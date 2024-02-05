@@ -7,7 +7,6 @@ import flask
 from cb_server.cb_repo import Repo, UserNotFound
 from models.server_errors import ErrorCodes, ServerError
 from models.transactions import UserTransactionInfo
-from apscheduler.schedulers.background import BackgroundScheduler
 
 def get_timestamp_from_req(req , key: str) -> int:
     iso_time = req.args.get(key)
@@ -47,7 +46,7 @@ else:
         print(f"No database file found at {args.db_path}, to create new one re-run the server with the '--create' flag")
         exit(-1)
 
-repo = Repo(args.db_path, create)
+repo = None
 
 app = flask.Flask(__name__)
 app.logger.setLevel(logging.INFO)
@@ -123,11 +122,6 @@ def get_user_transactions(username):
     # return the transactions
     return flask.jsonify([t._asdict() for t in transactions_list])
 
-# one second tick
-def tick():
-    #print("tick")
-    pass
-
 if __name__ == '__main__':
     from waitress import serve
     from urllib.parse import urlparse
@@ -139,10 +133,10 @@ if __name__ == '__main__':
     if parsed.hostname not in ['localhost', '127.0.0.1']:
         raise Exception("cb server must run on localhost, since its not protected")
 
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(tick, 'interval', seconds=1)
-    scheduler.start()
-
-    serve(app, listen=parsed.netloc)
+    try:
+        repo = Repo(args.db_path, create)
+        serve(app, listen=parsed.netloc)
+    finally:
+        repo and repo.close()
     
 
