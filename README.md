@@ -25,13 +25,10 @@ python -m cb_bot.cb_bot
 
 ## TODO
 
-pre MVP
-- handle allowance
-  - (done) add backward compatiblity
-  - add jobs table and jobs support
-  - (optional for pre MVP) add command for jobs
-
 post MVP
+- add version command (and version)
+- handle allowance
+  - (optional for pre MVP) add command for jobs
 - add SU (set user) command for admins
 - add gracefull shutdown from command 
   - new command set (admin ?)
