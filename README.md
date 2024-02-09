@@ -26,6 +26,8 @@ python -m cb_bot.cb_bot
 ## TODO
 
 post MVP
+- no cleanup of users from UserInfoProvider
+  - remove undetected users 
 - add version command (and version)
 - handle allowance
   - (optional for pre MVP) add command for jobs
