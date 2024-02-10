@@ -26,6 +26,7 @@ python -m cb_bot.cb_bot
 ## TODO
 
 post MVP
+- add goals
 - no cleanup of users from UserInfoProvider
   - remove undetected users 
 - add version command (and version)
