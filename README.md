@@ -26,6 +26,8 @@ python -m cb_bot.cb_bot
 ## TODO
 
 post MVP
+- jobs lock fails on abnormal temrination
+  - its probably enough if we pick it just when updating
 - add goals
 - no cleanup of users from UserInfoProvider
   - remove undetected users 
