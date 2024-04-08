@@ -26,6 +26,10 @@ python -m cb_bot.cb_bot
 ## TODO
 
 post MVP
+- keepalive
+  - make ping periodical
+  - notify if ping fails
+  - configurable (keep it coded)
 - jobs lock fails on abnormal temrination
   - its probably enough if we pick it just when updating
 - add goals
