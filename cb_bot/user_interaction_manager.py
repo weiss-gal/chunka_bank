@@ -132,7 +132,8 @@ class UserInteractionManager:
         for command_type in self.get_user_command_types(user_id):
             if command_type.matches(normalize_message(message.content)):
                 # instantiate the command handler
-                command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider, self.queue_interaction)
+                command = command_type(user_id, channel_id, self.server_connection, self.user_info_provider,
+                    self.user_mapper.is_admin(user_id), self.queue_interaction)
                 self.user_interaction_provider.set_interaction(user_id, channel_id, command)
                 res = await self._safe_handle_message(command, message)
                 if res: self.user_interaction_provider.unset_interaction(user_id, channel_id)

@@ -26,6 +26,9 @@ python -m cb_bot.cb_bot
 ## TODO
 
 post MVP
+* add user to show balance 
+  - test admin
+  - fix handling of users_search
 - add goals
 - no cleanup of users from UserInfoProvider
   - remove undetected users 

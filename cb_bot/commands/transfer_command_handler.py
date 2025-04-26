@@ -39,7 +39,11 @@ class TransferCommandHandler(CommandHandler):
         return TransferCommandHandler.PHRASE
     
     def resolve_user_id(self, user_str: str) -> str:
-        return self.user_info_provider.search_user(user_str)
+        res =  self.user_info_provider.search_user(user_str)
+        if len(res) == 0:
+            return None
+        
+        
     
     def get_default_description(self) -> str:
         return f"Transfer {self.amount} from '{self.user_info_provider.get_user_info(self.user_id).display_name}' " + \

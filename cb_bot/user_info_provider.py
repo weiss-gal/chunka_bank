@@ -33,15 +33,16 @@ class UserInfoProvider:
     def get_user_info(self, user_id: str) -> ExternalUserInfo:
         return ExternalUserInfo(user_id = user_id, **self.users[user_id]._asdict())
 
-    def search_user(self, search_str: str) -> str:
+    def search_user(self, search_str: str) -> List[ExternalUserInfo]:
+        result: List[ExternalUserInfo] = []
+        search_str = search_str.lower()
         for user_key in self.users.keys():
             user_info = self.users[user_key]
-            search_str = search_str.lower()
             if user_info.name.lower().startswith(search_str) or user_info.nickname.lower().startswith(search_str) \
                 or user_info.display_name.lower().startswith(search_str):
-                return user_key
+                result.append(self.get_user_info(user_key))
         
-        return None
+        return result
     
     def get_all_users(self) -> List[ExternalUserInfo]:
         return [self.get_user_info(k) for k in self.users.keys()]
